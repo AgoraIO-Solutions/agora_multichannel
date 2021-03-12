@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf 8">
+  <title>Agora Mega Grid</title>
+  <link rel="stylesheet" href="./assets/bootstrap.min.css">
+  <script src="./sdk/AgoraRTC_N-4.3.0.js"></script>
+  <script src="./sdk/AgoraRTM.js"></script>
+  <link rel="stylesheet" href="./index.css">
+</head>
+
+<body class="main">
+  <div id="spinner" class="lds-ring hidden">
+    <div></div>
+    <div></div>
+    <div></div>
+    <div></div>
+  </div>
+  <div id="toolbar" ng-app="multiChannelApp" ng-controller="multiChannelCtrl">
+
+    <div class="media_controls">
+      <img src='img/microphone_1-512.webp' onclick="toggleMic()" id="mic_off"
+        class="default_icon media_buttons_enabled hidden" />
+      <img src='img/icon-40-512.webp' onclick="toggleMic()" id="mic_on" class="default_icon button_horizontally_flip" />
+      <img src='img/_video-512.png' onclick="toggleCam()" id="cam_off"
+        class="default_icon media_buttons_enabled hidden" />
+      <img src='img/73-512.webp' onclick="toggleCam()" id="cam_on" class="default_icon cam_off_reduced" />
+    </div>
+
+    <div class="settings_controls">
+      <img src='img/aami3-22-512.png' onclick="toggleStats()" id="stats_button" class="default_icon settings_icon" />
+      <img src='img/Settings_control_interface-512.webp' onclick="toggleSettings()" id="settings_button"
+        class="default_icon settings_icon" />
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="media-device-test" data-backdrop="static" tabindex="-1" role="dialog"
+      aria-labelledby="staticBackdropLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="modal-label">Device Selection </h5>
+          </div>
+          <div class="modal-body">
+            <div class="container">
+              <h5 class="device-name">Microphone</h5>
+              <p class="device-intro">Produce sounds to check if the mic works.</p>
+              <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">Mics</button>
+                  <div class="mic-list dropdown-menu"></div>
+                </div>
+                <input type="text" class="mic-input form-control" aria-label="Text input with dropdown button" readonly>
+              </div>
+              <div class="progress">
+                <div class="progress-bar bg-success" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                  aria-valuemax="100"></div>
+              </div>
+              <h5 class="device-name">Camera</h5>
+              <p id="device-intro">Move in front of the camera to check if it works.</p>
+              <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">Cams</button>
+                  <div class="cam-list dropdown-menu"></div>
+                </div>
+                <input type="text" class="cam-input form-control" aria-label="Text input with dropdown button" readonly>
+              </div>
+              <!-- 
+          <h5 class="device-name">Speaker</h5>
+          <p class="device-intro">Play sound to test if the speaker works. (Switching speakers works only on Chrome).</p>
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Speakers</button>
+              <div class="speaker-list dropdown-menu"></div>
+            </div>
+            <input type="text" class="speaker-input form-control" aria-label="Text input with dropdown button" readonly>
+            <button class="speaker-play btn btn-primary btn-sm">play</button>
+          </div>
+          <div class="button">
+          </div>     -->
+              <div id="pre-local-player" class="player"></div>
+
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Join Channel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div id="stats_container" class="hidden">
+      <div id="renderFrameRate" class="media_buttons agora_stats"> </div>
+    </div>
+  </div>
+
+  <div id="grid">
+    <div id="local-player" class="local_video hidden"></div>
+  </div>
+</body>
+
+<script src="./assets/jquery-3.4.1.min.js"></script>
+<script src="./assets/bootstrap.bundle.min.js"></script>
+<script src="./app.js?nocache"></script>
