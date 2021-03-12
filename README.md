@@ -1,6 +1,6 @@
- This demo app will use multiple agora channels to increase the number of remote video streams displayed on screeen beyond the limits of a single channel.
+ This demo project uses multiple Agora channels to increase the number of remote video streams displayed on screeen beyond the limits of a single channel.
  
- This demo is configured to use 4 channels (xClients=4) allowing for up to 16*4=64 remote videos.
+ This demo is configured to use 4 channels (maxClients=4) allowing for up to 16*4=64 remote videos.
 
  Rather than immediately subscribing to publishing users when a "user-published" event is received,
  the users are put into a list (videoPublishersByPriority / audioPublishersByPriority).
@@ -28,7 +28,7 @@
  clone this repo into a folder being served by a webserver e.g. nginx
  Access the demo using an Agora appid which doesn't have tokens enabled 
  e.g.
- https://sokool.io/multigrid/?appid=20FFFFFFFFFb7c0cf5aPPPPPPPP537
+ https://sokool.io/agora_multichannel/?appid=20FFFFFFFFFb7c0cf5aPPPPPPPP537
  
  If you wanted to use tokens you would need to pass a token into the page for each of the channels the user is joining.
  
