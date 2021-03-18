@@ -32,7 +32,6 @@
 
     .hidden {
       display: none !important;
-      ivisibility: hidden;
     }
 
 
@@ -56,30 +55,6 @@
       width: 100% !important;
       height: 80px;
       font-size: 24px;
-    }
-
-    .media_controls {
-      font-family: Arial, Helvetica, sans-serif;
-      width: 160px;
-      padding: 4px;
-      margin: 2px;
-      color: black;
-      display: inline-block;
-      padding-left: 8px;
-      padding-right: 8px;
-    }
-
-    .settings_controls {
-      font-family: Arial, Helvetica, sans-serif;
-      float: right;
-      padding: 4px;
-      margin: 2px;
-      color: black;
-      display: inline-block;
-    }
-
-    .media_buttons {
-      width: 60px;
       padding: 2px;
       margin: 2px;
       background-color: #eee;
@@ -90,6 +65,25 @@
       vertical-align: middle;
     }
 
+    .media_controls {
+      font-family: Arial, Helvetica, sans-serif;
+      width: 160px;
+      ipadding: 4px;
+      imargin: 2px;
+      color: black;
+      display: inline-block;
+      ipadding-left: 8px;
+      ipadding-right: 8px;
+    }
+
+    .settings_controls {
+      font-family: Arial, Helvetica, sans-serif;
+      float: right;
+      ipadding: 4px;
+      imargin: 2px;
+      color: black;
+      display: inline-block;
+    }
 
     .main {
       background: #222;
@@ -146,21 +140,37 @@
     }
 
     .cam_off_reduced {
-      width: 26px !important;
-      height: 22px !important;
+      width: 30px !important;
+      height: 26px !important;
       padding: 6px !important;
       padding-left: 4px !important;
       padding-right: 4px !important;
     }
 
+    .default_icon_left_mobile {
+      margin-left: 28px !important;
+    }
+
+    .default_icon_right_mobile {
+      margin-right: 28px !important;
+    
+    }
+
+    .default_icon_left {
+      margin-left: 10px;
+    }
+
+    .default_icon_right {
+      margin-right: 10px;
+    }
 
     .default_icon {
-      width: 30px;
-      height: 30px;
+      width: 34px;
+      height: 34px;
       border-radius: 16%;
       padding: 2px;
-      margin: 6px;
-      margin-left: 2px;
+      imargin: 6px;
+
       background-color: #c44;
       color: white;
       display: inline-block;
