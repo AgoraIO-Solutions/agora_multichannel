@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf 8">
+  <title>Agora Mega Grid</title>
+  <link rel="stylesheet" href="./assets/bootstrap.min.css">
+  <script src="./sdk/AgoraRTC_N-4.3.0.js"></script>
+  <script src="./sdk/AgoraRTM.js"></script>
+  <link rel="stylesheet" href="./index.css?1=edd">
+  <link rel="stylesheet" href="./grid.css?1=3rddr2">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+  <div id="main_body" class="main_body">
+    <div id="toolbar" class="header">
+
+      <div id="media_controls" class="media_controls">
+        <img src='img/microphone_1-512.webp' onclick="toggleMic()" id="mic_off"
+          class="default_icon default_icon_left media_buttons_enabled hidden" />
+        <img src='img/icon-40-512.webp' onmousedown="pushToTalkStart()" onmouseup="pushToTalkStop()"
+          oldclick="toggleMic()" id="mic_on" class="default_icon default_icon_left button_horizontally_flip" />
+        <img src='img/_video-512.png' onclick="toggleCam()" id="cam_off"
+          class="default_icon default_icon_left media_buttons_enabled hidden" />
+        <img src='img/73-512.webp' onclick="toggleCam()" id="cam_on"
+          class="default_icon default_icon_left cam_off_reduced" />
+
+        <img src='img/play.png' onclick="togglePlayerControls()" id="play_controls"
+          class="default_icon default_icon_left play_icon" />
+      </div>
+
+      <div id="settings_controls" class="settings_controls">
+
+        <img src='img/iconfinder_apps_326511.png' onclick="toggleLayout()" id="settings_button"
+          class="default_icon default_icon_right settings_icon" />
+        <img src='img/aami3-22-512.png' onclick="toggleStats()" id="stats_button"
+          class="default_icon default_icon_right settings_icon" />
+        <img src='img/Settings_control_interface-512.webp' onclick="toggleSettings()" id="settings_button"
+          class="default_icon default_icon_right settings_icon" />
+      </div>
+
+      <div id="spinner" class="lds-ring hidden">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+
+      <!-- Modal -->
+      <div class="modal fade" id="media-device-test" data-backdrop="static" tabindex="-1" role="dialog"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="modal-label">Device Selection </h5>
+            </div>
+            <div class="modal-body">
+              <div class="container">
+                <h5 class="device-name">Microphone</h5>
+                <p class="device-intro">Please speak to confirm your mic works</p>
+                <div class="input-group mb-3">
+                  <div class="input-group-prepend">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown"
+                      aria-haspopup="true" aria-expanded="false">Mics</button>
+                    <div class="mic-list dropdown-menu"></div>
+                  </div>
+                  <input type="text" class="mic-input form-control" aria-label="Text input with dropdown button"
+                    readonly>
+                </div>
+                <div class="progress">
+                  <div class="progress-bar bg-success" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                    aria-valuemax="100"></div>
+                </div>
+                <br />
+                <h5 class="device-name">Camera</h5>
+                <div class="input-group mb-3">
+                  <div class="input-group-prepend">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown"
+                      aria-haspopup="true" aria-expanded="false">Cams</button>
+                    <div class="cam-list dropdown-menu"></div>
+                  </div>
+                  <input type="text" class="cam-input form-control" aria-label="Text input with dropdown button"
+                    readonly>
+                </div>
+                <!-- 
+          <h5 class="device-name">Speaker</h5>
+          <p class="device-intro">Play sound to test if the speaker works. (Switching speakers works only on Chrome).</p>
+          <div class="input-group mb-3">
+            <div class="input-group-prepend">
+              <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Speakers</button>
+              <div class="speaker-list dropdown-menu"></div>
+            </div>
+            <input type="text" class="speaker-input form-control" aria-label="Text input with dropdown button" readonly>
+            <button class="speaker-play btn btn-primary btn-sm">play</button>
+          </div>
+          <div class="button">
+          </div>     -->
+                <div id="pre-local-player" class="player"></div>
+
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" id="mediaGo" data-dismiss="modal">Join Channel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="stats_container" class="hidden">
+        <div id="renderFrameRate" class="media_buttons agora_stats"> </div>
+      </div>
+
+      <div id="player_container" class="hidden">
+        <div>
+          <label for="fname">Youtube Id: </label>
+          <input type="text" id="ytid" name="ytid" value="kHMXNPkNTTQ">
+          <img src='img/cue.webp' onclick="cueVideo()" id="cue" class="default_icon default_icon_left play_icon" />
+          <img src='img/play.png' onclick="playVideo()" id="play" class="default_icon default_icon_left play_icon" />
+          <img src='img/stop.webp' onclick="stopVideo()" id="stop" class="default_icon default_icon_left play_icon stop_icon" />
+        </div>
+      </div>
+
+    </div>
+
+    <div id="focus-video" class="focussed-video hidden">
+      <div id="player" class="hidden"></div>
+    </div>
+
+    <div id="grid" class="grid_wrapper">
+      <div id="local-player" class="local_video hidden"></div>
+    </div>
+
+  </div>
+</body>
+<script>
+  var player;
+  var tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  var firstScriptTag = document.getElementsByTagName('script')[0];
+  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+  function onYouTubeIframeAPIReady() {
+    player = new YT.Player('player', {
+      height: '100%',
+      width: '100%',
+      videoId: '',
+      playerVars: { 'autoplay': 0, 'controls': 0 },
+      events: {
+        'onReady': onPlayerReady,
+        'onStateChange': onPlayerStateChange
+      }
+    });
+  }
+  // 4. The API will call this function when the video player is ready.
+  function onPlayerReady(event) {
+  }
+
+  // 5. The API calls this function when the player's state changes.
+  //    The function indicates that when playing a video (state=1),
+  //    the player should play for six seconds and then stop.
+  function onPlayerStateChange(event) {
+  }
+
+  function togglePlayerControls() {
+    if (document.getElementById("player_container").classList.contains("hidden")) {
+      document.getElementById("player_container").classList.remove("hidden");
+      document.getElementById("toolbar").classList.add("headerOpen");
+    } else {
+      document.getElementById("player_container").classList.add("hidden")
+      document.getElementById("toolbar").classList.remove("headerOpen");
+    }
+  }
+
+  var playerInit = false;
+
+  function enableShareContent() {
+    
+    if (!playerInit) {
+      initWatchPlayer();
+      playerInit = true;
+    }
+    agoraApp.shareContentOnDisplay = true;
+
+    if (agoraApp.mainVideoId) {
+      agoraApp.moveToLargeWindow();
+    }
+    document.getElementById("player").classList.remove("hidden");
+    if (agoraApp.gridLayout) {
+     toggleLayout();
+    }
+
+  }
+
+  function disableShareContent() {
+    agoraApp.shareContentOnDisplay = false;
+    document.getElementById("player").classList.add("hidden");
+  }
+
+  function initWatchPlayer() {
+    setInterval(() => {
+      broadcastSeek();
+    }, 2000);
+  }
+
+  function cueVideo() {
+    enableShareContent();
+    var msg = agoraApp.WATCH + ':CUE:' + document.getElementById("ytid").value;
+    sendWatchMessage(msg);
+    player.cueVideoById({ 'videoId': document.getElementById("ytid").value });
+    agoraApp.watchPartyOwnerPlaying = false;
+
+  }
+
+  function playVideo() {
+    enableShareContent();
+    var msg = agoraApp.WATCH + ':PLAY:' + document.getElementById("ytid").value;
+    sendWatchMessage(msg);
+    player.playVideo();
+    player.setVolume(80);
+    agoraApp.watchPartyOwnerPlaying = true;
+  }
+
+  function broadcastSeek() {
+    if (agoraApp.watchPartyOwner && agoraApp.watchPartyOwnerPlaying) {
+      var msg = agoraApp.WATCH + ':SEEK:' + document.getElementById("ytid").value + ":" + player.getCurrentTime();
+      sendWatchMessage(msg);
+    }
+  }
+
+  function stopVideo() {
+    var msg = agoraApp.WATCH + ':STOP:' + document.getElementById("ytid").value;
+    sendWatchMessage(msg);
+    agoraApp.watchPartyOwnerPlaying = false;
+    player.stopVideo();
+    disableShareContent()
+  }
+
+  function sendWatchMessage(msg) {
+    agoraApp.watchPartyOwner = true;
+    agoraApp.rtmChannel.sendMessage({ text: msg }).then(() => {
+      //console.log('AgoraRTM FPS send success :' + msg);
+    }).catch(error => {
+      console.log('AgoraRTM WATCH send failure');
+    });
+  }
+
+</script>
+
+<script src="./assets/jquery-3.4.1.min.js"></script>
+<script src="./assets/bootstrap.bundle.min.js"></script>
+<script src="./app.js?rrWWWr"></script>

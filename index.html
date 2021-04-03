@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="./assets/bootstrap.min.css">
   <script src="./sdk/AgoraRTC_N-4.3.0.js"></script>
   <script src="./sdk/AgoraRTM.js"></script>
-  <link rel="stylesheet" href="./index.css?1=d">
+  <link rel="stylesheet" href="./index.css?1=edd">
   <link rel="stylesheet" href="./grid.css?1=3rddr2">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
@@ -26,6 +26,9 @@
     </div>
 
     <div id="settings_controls" class="settings_controls">
+      
+      <img src='img/iconfinder_apps_326511.png' onclick="toggleLayout()" id="settings_button"
+      class="default_icon default_icon_right settings_icon" />
       <img src='img/aami3-22-512.png' onclick="toggleStats()" id="stats_button" class="default_icon default_icon_right settings_icon" />
       <img src='img/Settings_control_interface-512.webp' onclick="toggleSettings()" id="settings_button"
         class="default_icon default_icon_right settings_icon" />
@@ -90,7 +93,7 @@
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-primary" data-dismiss="modal">Join Channel</button>
+            <button type="button" class="btn btn-primary" id="mediaGo" data-dismiss="modal">Join Channel</button>
           </div>
         </div>
       </div>
@@ -100,6 +103,10 @@
     <div id="stats_container" class="hidden">
       <div id="renderFrameRate" class="media_buttons agora_stats"> </div>
     </div>
+  </div>
+
+  <div id="focus-video" class="focussed-video hidden">
+  
   </div>
 
   <div id="grid" class="grid_wrapper">
@@ -112,4 +119,4 @@
 
 <script src="./assets/jquery-3.4.1.min.js"></script>
 <script src="./assets/bootstrap.bundle.min.js"></script>
-<script src="./app.js?rrr"></script>
+<script src="./app.js?iirrdddDDRRr"></script>

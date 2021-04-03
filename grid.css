@@ -25,7 +25,10 @@
     grid-template-columns: repeat(1, 1fr);
     gap: 2px;
     grid-auto-rows: minmax(72px, auto);
-    iheight: 100%;
+  }
+
+  .grid_wrapper_follow {
+    overflow-x: scroll;
   }
 
   .cell {
@@ -33,7 +36,6 @@
     width: 160px;
     height: 90px;
   }
-
 
   .header {
     height: 60px;
