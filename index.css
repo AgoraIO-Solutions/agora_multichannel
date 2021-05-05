@@ -12,6 +12,7 @@
   -webkit-border-radius: 6px;
   border-radius: 6px;
   overflow: hidden;
+  object-fit: contain !important;
   }
 
   .agora_select {
@@ -27,7 +28,7 @@
   }
 
   .local_video {
-  background-color: #222;
+  ibackground-color: #222;
   margin: 2px;
   margin-left: 3px;
   margin-right: 0px;
@@ -73,7 +74,7 @@
   .agora_stats {
   width: 100% !important;
   height: 80px;
-  font-size: 24px;
+  font-size: 18px;
   padding: 2px;
   margin: 2px;
   background-color: #eee;
@@ -87,8 +88,6 @@
   .media_controls {
   font-family: Arial, Helvetica, sans-serif;
   width: 160px;
-  ipadding: 4px;
-  imargin: 2px;
   color: black;
   display: inline-block;
   }
@@ -99,8 +98,6 @@
   color: black;
   display: inline-block;
   }
-
-
 
   .main {
   background: #222;
@@ -231,7 +228,7 @@
   }
 
   #pre-local-player {
-  width: 240px;
+  width: 320px;
   height: 180px;
   }
 
@@ -293,5 +290,11 @@
   }
   }
   .modal-content{
-  background-color: #fafafa;
+    background-color: #fafafa;
+  }
+
+  .grid_over{
+    position:absolute;
+    bottom: 10px;
+    right: 10px;
   }
