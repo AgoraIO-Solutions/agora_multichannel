@@ -19,6 +19,9 @@ var AgoraRTCUtils = (function () {
           [this.localTracks.audioTrack, this.localTracks.videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks(
           { microphoneId: this.micId }, { cameraId: this.cameraId, encoderConfig: { width:640, height: 360, frameRate: 24, bitrateMin: 400, bitrateMax: 1000} });
   
+    To avoid losing the camera feed on iOS when switching resolution you should explicity select the camera and mic in the SDK e.g.
+        await agoraApp.localTracks.videoTrack.setDevice(currentCam.deviceId);
+        await agoraApp.localTracks.audioTrack.setDevice(currentMic.deviceId);
     
 */
   var AdjustFrequency = 500; // ms between checks
@@ -32,7 +35,7 @@ var AgoraRTCUtils = (function () {
   var _currentProfile = 0;
   var _fpsLowObserved = 0;
   var _brLowObserved = 0;
-  var _maxProfileDueToLowFPS = 1000; 
+  var _maxProfileDueToLowFPS = 1000;  
   var _brHighObserved = 0;
 
   var _profiles = [
