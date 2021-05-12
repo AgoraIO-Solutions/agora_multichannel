@@ -5,79 +5,89 @@
   <meta charset="utf 8">
   <title>Agora Mega Grid</title>
   <link rel="stylesheet" href="./assets/bootstrap.min.css">
-  <!--script src="./sdk/AgoraRTC_N-4.3.0.js"></script-->
   <script src="./sdk/ng4.5b.js"></script>
   <script src="./sdk/AgoraRTM.js"></script>
-  <script src="./sdk/AgoraRTCUtil.js?nocache=12"></script>
-  <link rel="stylesheet" href="./index.css?1=eiiiiidd">
+  <script src="./sdk/AgoraRTCUtil.js"></script>
+  <!--script src="./sdk/AgoraWatchYT.js"></script-->
+  <script src="./sdk/AgoraWatchParty.js?a=b"></script>
+  <link rel="stylesheet" href="./index.css?1=euuuu">
   <link rel="stylesheet" href="./grid.css?1=3rddr2">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body>
   <div id="main_body" class="main_body">
-  <div id="toolbar"  class="header" >
+    <div id="toolbar" class="header">
 
-    <div id="media_controls" class="media_controls">
-      <img src='img/microphone_1-512.webp' onclick="toggleMic()" id="mic_off"
-        class="default_icon default_icon_left media_buttons_enabled hidden" />
-      <img src='img/icon-40-512.webp' onclick="toggleMic()" id="mic_on" class="default_icon default_icon_left button_horizontally_flip" />
-      <img src='img/_video-512.png' onclick="toggleCam()" id="cam_off"
-        class="default_icon default_icon_left media_buttons_enabled hidden" />
-      <img src='img/73-512.webp' onclick="toggleCam()" id="cam_on" class="default_icon default_icon_left cam_off_reduced" />
-    </div>
+      <div id="media_controls" class="media_controls">
+        <img src='img/microphone_1-512.webp' onclick="toggleMic()" id="mic_off"
+          class="default_icon default_icon_left media_buttons_enabled hidden" />
+        <img src='img/icon-40-512.webp' onclick="toggleMic()" oldclick="toggleMic()" id="mic_on"
+          class="default_icon default_icon_left button_horizontally_flip" />
+        <img src='img/_video-512.png' onclick="toggleCam()" id="cam_off"
+          class="default_icon default_icon_left media_buttons_enabled hidden" />
+        <img src='img/73-512.webp' onclick="toggleCam()" id="cam_on"
+          class="default_icon default_icon_left cam_off_reduced" />
 
-    <div id="settings_controls" class="settings_controls">
-      
-      <img src='img/iconfinder_apps_326511.png' onclick="toggleLayout()" id="settings_button"
-      class="default_icon default_icon_right settings_icon" />
-      <img src='img/aami3-22-512.png' onclick="toggleStats()" id="stats_button" class="default_icon default_icon_right settings_icon" />
-      <img src='img/Settings_control_interface-512.webp' onclick="toggleSettings()" id="settings_button"
-        class="default_icon default_icon_right settings_icon" />
-    </div>
+        <img src='img/play.png' onclick="hideStats(); agoraWatchParty.togglePlayerControls()" id="play_controls"
+          class="default_icon default_icon_left play_icon" />
 
-    <div id="spinner" class="lds-ring hidden">
-      <div></div>
-      <div></div>
-      <div></div>
-      <div></div>
-    </div>
+      </div>
 
-    <!-- Modal -->
-    <div class="modal fade" id="media-device-test" data-backdrop="static" tabindex="-1" role="dialog"
-      aria-labelledby="staticBackdropLabel" aria-hidden="true">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title" id="modal-label">Device Selection </h5>
-          </div>
-          <div class="modal-body">
-            <div class="container">
-              <h5 class="device-name">Microphone</h5>
-              <p class="device-intro">Please speak to confirm your mic works</p>
-              <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                  <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">Mics</button>
-                  <div class="mic-list dropdown-menu"></div>
+      <div id="settings_controls" class="settings_controls">
+
+        <img src='img/iconfinder_apps_326511.png' onclick="toggleLayout()" id="settings_button"
+          class="default_icon default_icon_right settings_icon" />
+        <img src='img/aami3-22-512.png' onclick="agoraWatchParty.hidePlayerControls();  toggleStats()" id="stats_button"
+          class="default_icon default_icon_right settings_icon" />
+        <img src='img/Settings_control_interface-512.webp' onclick="toggleSettings()" id="settings_button"
+          class="default_icon default_icon_right settings_icon" />
+      </div>
+
+      <div id="spinner" class="lds-ring hidden">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+
+      <!-- Modal -->
+      <div class="modal fade" id="media-device-test" data-backdrop="static" tabindex="-1" role="dialog"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="modal-label">Device Selection </h5>
+            </div>
+            <div class="modal-body">
+              <div class="container">
+                <h5 class="device-name">Microphone</h5>
+                <p class="device-intro">Please speak to confirm your mic works</p>
+                <div class="input-group mb-3">
+                  <div class="input-group-prepend">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown"
+                      aria-haspopup="true" aria-expanded="false">Mics</button>
+                    <div class="mic-list dropdown-menu"></div>
+                  </div>
+                  <input type="text" class="mic-input form-control" aria-label="Text input with dropdown button"
+                    readonly>
                 </div>
-                <input type="text" class="mic-input form-control" aria-label="Text input with dropdown button" readonly>
-              </div>
-              <div class="progress">
-                <div class="progress-bar bg-success" role="progressbar" aria-valuenow="0" aria-valuemin="0"
-                  aria-valuemax="100"></div>
-              </div>
-	      <br/>
-              <h5 class="device-name">Camera</h5>
-              <div class="input-group mb-3">
-                <div class="input-group-prepend">
-                  <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown"
-                    aria-haspopup="true" aria-expanded="false">Cams</button>
-                  <div class="cam-list dropdown-menu"></div>
+                <div class="progress">
+                  <div class="progress-bar bg-success" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                    aria-valuemax="100"></div>
                 </div>
-                <input type="text" class="cam-input form-control" aria-label="Text input with dropdown button" readonly>
-              </div>
-              <!-- 
+                <br />
+                <h5 class="device-name">Camera</h5>
+                <div class="input-group mb-3">
+                  <div class="input-group-prepend">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown"
+                      aria-haspopup="true" aria-expanded="false">Cams</button>
+                    <div class="cam-list dropdown-menu"></div>
+                  </div>
+                  <input type="text" class="cam-input form-control" aria-label="Text input with dropdown button"
+                    readonly>
+                </div>
+                <!-- 
           <h5 class="device-name">Speaker</h5>
           <p class="device-intro">Play sound to test if the speaker works. (Switching speakers works only on Chrome).</p>
           <div class="input-group mb-3">
@@ -90,35 +100,71 @@
           </div>
           <div class="button">
           </div>     -->
-              <div id="pre-local-player" class="player"></div>
+                <div id="pre-local-player" class="player"></div>
 
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" id="mediaGo" data-dismiss="modal">Join Channel</button>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-primary" id="mediaGo" data-dismiss="modal">Join Channel</button>
-          </div>
+        </div>
+      </div>
+
+      <div id="stats_container" class="hidden">
+        <div id="renderFrameRate" class="media_buttons agora_stats"> </div>
+      </div>
+
+      <div id="player_container" class="hidden">
+        <div>
+          <!--
+          <label for="fname">Youtube Id: </label>
+          <input type="text" id="ytid" name="ytid" value="kHMXNPkNTTQ">
+          <img src='img/cue.webp' onclick="agoraWatchYT.cueVideo()" id="ytcue" class="default_icon default_icon_left play_icon" />
+          <img src='img/play.png' onclick="agoraWatchYT.playVideo()" id="ytplay" class="default_icon default_icon_left play_icon" />
+          <img src='img/stop.webp' onclick="agoraWatchYT.stopVideo()" id="ytstop" class="default_icon default_icon_left play_icon stop_icon" />
+          -->
+          <label class="mp4label" for="fname">Content URL </label>
+          <input type="text" class="watch_input" id="watchid" name="watchid"
+            value="https://sokool.io/media/h264_1080_best.mp4">
+          <img src='img/cue.webp' title="Load watch party video" onclick=" agoraWatchParty.cueVideo()" id="cue"
+            class="default_icon default_icon_left play_icon cue_icon" />
+            <img src='img/screen.png'  title="Screenshare"  onclick="agoraWatchParty.stopVideo(); publishScreenShareToChannel() " id="ss"
+            class="default_icon default_icon_left play_icon cue_icon" />
+
+          <img src='img/stop.png'  title="Stop presenting"  onclick="agoraWatchParty.stopVideo(); agoraApp.stopScreensharePublish();  agoraApp.showGridView(); agoraWatchParty.togglePlayerControls(); " id="stop"
+            class="default_icon default_icon_left play_icon stop_icon" />
+
+          <!--<img src='img/play.png' onclick="agoraWatchParty.playVideo()" id="play" class="default_icon default_icon_left play_icon" />
+         
+          -->
         </div>
       </div>
     </div>
 
+    <div id="focus-video" class="focussed-video hidden">
+      <div id="ytplayer" class="hidden"></div>
 
-    <div id="stats_container" class="hidden">
-      <div id="renderFrameRate" class="media_buttons agora_stats"> </div>
+      <div id="agoraplayer" class="hidden">
+        <video id="agoravideoplayer" crossorigin="anonymous" controls="false" preload='auto'>
+          <!--<source src="https://assets.frame.io/encode/39a5dbfc-e900-437d-8be9-58306c1be59b/h264_1080_best.mp4?x-amz-meta-resource_id=81d272bd-c1f7-4c4a-b0a7-08099853e362&amp;x-amz-meta-resource_type=asset&amp;x-amz-meta-request_id=Fny-4XSBBXpoaqkAz5GD&amp;x-amz-meta-project_id=986ae212-5ed1-43b7-a495-bb13a80d2f33&amp;Expires=1620466241&amp;Signature=d9W99H2vIi2Jifm~k370Ip6B11Ra9MBhd3jLF5V8ZgfpcvM6ZJBJr6PrQUpIermO4tJRhXgw79WLtPZVhkSILC-sILkXziKn8SttPZn4GwYOADWddC8qmXfbgsEsGt-YOYgaDU04pk5UDEgyZ85QCzaTCL1s48zz2XUER1f0gwZBYNKWOmr0LfuPQvla9RuVtsyQnn~lqq2y8sP42HaxN6R8V9kSFlNelKOoXsGE7VkxVjXXnLgVXw7iWa8Tp4LYUPC7HqNFC9jd0TWtV2Jia5kKZfk-y0KIVldupaEoXXWQvGHP8oDzUCi70VRoqCLcypLgERSkdQAHMeGbYlyfaA__&amp;Key-Pair-Id=K1XW5DOJMY1ET9" type="video/mp4">-->
+        </video>
+      </div>
     </div>
+
+
+    <div id="grid" class="grid_wrapper">
+      <div id="local-player" class="local_video hidden"></div>
+    </div>
+
   </div>
-
-  <div id="focus-video" class="focussed-video hidden">
-  
-  </div>
-
-  <div id="grid" class="grid_wrapper">
-    <div id="local-player" class="local_video hidden"></div>
-  </div>
-
-
-</div> 
 </body>
+
+<script>
+
+
+</script>
 
 <script src="./assets/jquery-3.4.1.min.js"></script>
 <script src="./assets/bootstrap.bundle.min.js"></script>
-<script src="./app.js?nocache=12"></script>
+<script src="./app.js?rr44"></script>

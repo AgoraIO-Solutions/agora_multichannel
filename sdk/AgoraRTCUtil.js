@@ -89,7 +89,7 @@ var AgoraRTCUtils = (function () {
     }
     
     // log details
-    console.log("AutoAdjustAlgo profile:"+_currentProfile+", width:"+videoStats.sendResolutionWidth+", height:"+videoStats.sendResolutionHeight+", fps:" + videoStats.sendFrameRate + ", br_kbps:" + sendBitratekbps + ", bad_fps:" + _fpsLowObserved + ", bad_br:" + _brLowObserved + ", good_br:" + _brHighObserved+" ios="+isIOS());
+    //console.log("AutoAdjustAlgo profile:"+_currentProfile+", width:"+videoStats.sendResolutionWidth+", height:"+videoStats.sendResolutionHeight+", fps:" + videoStats.sendFrameRate + ", br_kbps:" + sendBitratekbps + ", bad_fps:" + _fpsLowObserved + ", bad_br:" + _brLowObserved + ", good_br:" + _brHighObserved+" ios="+isIOS());
     // +", sendPacketsLost:"+videoStats.sendPacketsLost does not work on Safari
     
     // after 5 seconds of low bandwidth out
@@ -116,7 +116,9 @@ var AgoraRTCUtils = (function () {
     _fpsLowObserved = 0;
     var profile = _profiles[profileInd];
     console.log("Auto Adjust Changing Profile to " + profile.id);
-    _publishClient._highStream.videoTrack.setEncoderConfiguration({ width: profile.width, height: profile.height, frameRate: profile.frameRate, bitrateMin: profile.bitrateMin, bitrateMax: profile.bitrateMax });
+    if (_publishClient &&  _publishClient._highStream &&  _publishClient._highStream.videoTrack ) {
+      _publishClient._highStream.videoTrack.setEncoderConfiguration({ width: profile.width, height: profile.height, frameRate: profile.frameRate, bitrateMin: profile.bitrateMin, bitrateMax: profile.bitrateMax });
+    }
   }
 
   return { // public interface

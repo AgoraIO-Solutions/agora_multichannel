@@ -2,7 +2,7 @@
     display: grid;
     grid-template-columns: repeat(1, 1fr);
     grid-template-rows: auto 1fr;
-    gap: 10px;
+    gap: 4px;
     grid-auto-rows: minmax(auto, auto);
     height: 100%;
   }
@@ -49,6 +49,10 @@
     height: 140px !important;
   }
 
+  .headerOpenPlay {
+    height: 120px !important;
+  }
+  
   .header2 {
     height: 350px;
     padding: 10px;
