@@ -1,7 +1,7 @@
 
 ## AgoraRTCUtils
 This javascript module provides some useful algorithms to work with the AgoraRTC 4.x SDK
-These utils are all used in this reference app and you can refer to app.js for more detail
+These utils are all used in this reference app and you can refer to [../app.js](../app.js) for more detail
 Include the javascript:
 
        <script src="./sdk/AgoraRTCUtil.js"></script>
