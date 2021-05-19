@@ -1,5 +1,8 @@
 var AgoraRTCUtils = (function () {
 
+
+  // Auto Adjust Resolutions
+
   // This utility will adjust the camera encoding profile dynamically in order to adapt to slower networks 
   // and also to support devices which insufficient CPU/GPU resources required to encode and decode higher resolution video streams
   // This utility is intended mainly for iOS devices where both Safari and Chrome do not automatically 
@@ -121,7 +124,111 @@ var AgoraRTCUtils = (function () {
     }
   }
 
-  return { // public interface
+  // Fire Inbound Audio Levels for Remote Streams
+   // Bandwidth and Call Stats Utils
+   // fire events if necessary
+
+  var _rtc_clients = [];
+  var _rtc_num_clients = 0;
+  var _monitorInboundAudioLevelsInterval;
+
+  function monitorInboundAudioLevels() {
+
+  for (var i = 0; i < _rtc_num_clients; i++) {
+    var client = _rtc_clients[i];
+    if (!client._users.length) {
+      continue;
+    }
+
+    if (client._remoteStream) {
+      for (var u = 0; u < client._users.length; u++) {
+        var uid = client._users[u].uid;
+        var rc = client._remoteStream.get(uid);
+        if (rc) {
+          if (rc.pc && rc.pc.pc) {
+            rc.pc.pc.getStats(null).then(stats => {
+              stats.forEach(report => {
+                if (report.type === "inbound-rtp" && report.kind === "audio") {
+                    if (report["audioLevel"]) {                      
+                      console.log("sweet audioLevel " + report["audioLevel"]);
+                      AgoraRTCUtilEvents.emit("InboundAudioExceedsThreshold",report["audioLevel"]);
+                    }
+                    
+                 // Object.keys(report).forEach(statName => { console.log(`UTILS inbound-rtp ${report.kind} for ${uid} ${statName} ${report[statName]}`); });
+                } else {
+                 // Object.keys(report).forEach(statName => { console.log(`${report.type} ${report.kind} ${uid}  ${statName}: ${report[statName]}`); });
+                }
+              })
+            });
+          }
+        }
+      }
+    } 
+   }
+  }
+
+   // Voice Activity Detection
+   // fire events if necessary
+
+   var _vad_audioTrack=null;
+   var _voiceActivityDetectionFrequency=150;
+  
+   var _vad_MaxAudioSamples = 400;
+   var _vad_MaxBackgroundNoiseLevel = 30;
+   var _vad_SilenceOffeset = 10;
+   var _vad_audioSamplesArr = [];
+   var _vad_audioSamplesArrSorted = [];
+   var _vad_exceedCount = 0;
+   var _vad_exceedCountThreshold = 2;
+   var _voiceActivityDetectionInterval;
+
+  function getInputLevel(track) {
+    var analyser = track._source.analyserNode;
+    const bufferLength = analyser.frequencyBinCount;
+    var data = new Uint8Array(bufferLength);
+    analyser.getByteFrequencyData(data);
+    var values = 0;
+    var average;
+    var length = data.length;
+    for (var i = 0; i < length; i++) {
+      values += data[i];
+    }
+    average = Math.floor(values / length);
+    return average;
+  }
+
+  function voiceActivityDetection() {
+    if (!_vad_audioTrack)
+      return;
+
+    var audioLevel = getInputLevel(_vad_audioTrack); 
+    if (audioLevel <=_vad_MaxBackgroundNoiseLevel) {
+      if (_vad_audioSamplesArr.length >= _vad_MaxAudioSamples) {
+        var removed = _vad_audioSamplesArr.shift();
+        var removedIndex = _vad_audioSamplesArrSorted.indexOf(removed);
+        if (removedIndex > -1) {
+          _vad_audioSamplesArrSorted.splice(removedIndex, 1);
+        }
+      }
+      _vad_audioSamplesArr.push(audioLevel);
+      _vad_audioSamplesArrSorted.push(audioLevel);
+      _vad_audioSamplesArrSorted.sort((a, b) => a - b);
+    }
+    var background = Math.floor(3 * _vad_audioSamplesArrSorted[Math.floor(_vad_audioSamplesArrSorted.length / 2)] / 2);
+    if (audioLevel > background + _vad_SilenceOffeset) {
+      _vad_exceedCount++;
+    } else {
+      _vad_exceedCount = 0;
+    }
+
+    if (_vad_exceedCount > _vad_exceedCountThreshold) {
+      _vad_exceedCount = 0;
+      AgoraRTCUtilEvents.emit("VoiceActivityDetected",_vad_exceedCount);
+      /// FIRE EVENTS
+    }
+  }
+
+  return { // public interfaces
     startAutoAdjustResolution: function (client, initialProfile) {
       _publishClient = client;
       _currentProfile = getProfileIndex(initialProfile);
@@ -143,8 +250,76 @@ var AgoraRTCUtils = (function () {
     isIOS: function () {
       return isIOS();
     },
+    setRTCClients: function(clientArray, numClients) {
+      _rtc_clients=clientArray;
+      _rtc_num_clients=numClients;
+    },
+    setRTCClient: function(client) {
+      _rtc_clients[0]=client;
+      _rtc_num_clients=1;
+    },
+    startInboundVolumeMonitor: function (inboundVolumeMonitorFrequency) {
+      _monitorInboundAudioLevelsInterval = setInterval(() => {
+        monitorInboundAudioLevels();
+      }, inboundVolumeMonitorFrequency);
+    },
+    stopInboundVolumeMonitor: function () {
+      clearInterval(_monitorInboundAudioLevelsInterval);
+      _monitorInboundAudioLevelsInterval=null;
+    },
 
-    publicMethod2: function () {
-    }
+    startVoiceActivityDetection: function (vad_audioTrack) {
+      _vad_audioTrack=vad_audioTrack;
+      if (_voiceActivityDetectionInterval) {
+        return;
+      }
+      _voiceActivityDetectionInterval = setInterval(() => {
+        voiceActivityDetection();
+      }, _voiceActivityDetectionFrequency);
+    },
+    stopVoiceActivityDetection: function () {
+      clearInterval(_voiceActivityDetectionInterval);
+      _voiceActivityDetectionInterval=null;
+    },
+
+
   };
+})();
+
+
+
+var AgoraRTCUtilEvents = (function() {
+
+  var events = {};
+
+  function on(eventName, fn) {
+      events[eventName] = events[eventName] || [];
+      events[eventName].push(fn);
+  }
+
+  function off(eventName, fn) {
+      if (events[eventName]) {
+          for (var i = 0; i < events[eventName].length; i++) {
+              if( events[eventName][i] === fn ) {
+                  events[eventName].splice(i, 1);
+                  break;
+              }
+          }
+      }
+  }
+
+  function emit(eventName, data) {
+      if (events[eventName]) {
+          events[eventName].forEach(function(fn) {
+              fn(data);
+          });
+      }
+  }
+
+  return {
+      on: on,
+      off: off,
+      emit: emit
+  };
+
 })();

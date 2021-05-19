@@ -4,7 +4,7 @@
   background-color: #222 !important;
   }
   .focussed-video{
-  background-color: #111;
+  ffbackground-color: #111;
   margin: auto;
   }
   .agora_video_player {
@@ -42,23 +42,34 @@
   display: none !important;
   }
 
+
+  .remove_agora_video_style{
+    background-color: transparent !important;
+  }
+
   .focussed-video-inner {
-  background-color: #111;
+  ffbackground-color: #111;
   width:100% !important;
   height:100% !important;
   }
 
   .remote_video {
-  background-color: #111;
+  ffbackground-color: #111;
   background-image: url("./img/novideo.png") ;
   background-repeat: no-repeat;
-  background-size: auto 80%;
+  background-size: auto 50%;
   background-position: center 50%;
   margin: 2px;
   padding: 2px;
   width: 120px;
   height: 90px;
   display: inline-block;
+  }
+
+
+  .remote_video_mobile {
+    margin: 1px;
+    padding: 1px;
   }
 
   .remote_video_active {
@@ -132,7 +143,7 @@
   padding: 6px;
   padding-top: 11px;
   display: inline-block;
-  background-color: lightskyblue !important;
+  background-color: #81bfe4 !important;
   }
 
   #mic_mute {
@@ -197,7 +208,7 @@
   padding: 2px;
   imargin: 6px;
 
-  background-color: #c44;
+  background-color: #cd5656;
   color: white;
   display: inline-block;
   text-align: center;
@@ -208,12 +219,12 @@
 
 
   .play_icon{
-  background-color: lightskyblue !important;
+  background-color: #81bfe4 !important;
   }    
 
 
   ._icon{
-    background-color: lightskyblue !important;
+    background-color: #81bfe4 !important;
     }    
 
 
@@ -234,7 +245,7 @@
 
 
   .media_buttons_enabled {
-  background-color: rgb(91, 184, 137) !important;
+  background-color: #47aa79 !important;
   }
 
   .settings_icon {
@@ -326,4 +337,13 @@
 
   .watch_input_mobile{
     width: 70px;
+  }
+
+  #watchiddd{
+  width: 18px;
+  height: 28px;
+  }
+  
+  #agoravideoplayer{
+    width: 100%;
   }
