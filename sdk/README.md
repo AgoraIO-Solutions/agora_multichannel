@@ -6,13 +6,17 @@ Include the javascript:
 
        <script src="./sdk/AgoraRTCUtil.js"></script>
 
-### Voice Activity Detection
+### Voice Activity Detection VAD
 After publishing your microphone to the channel, call the startVoiceActivityDetection method.
 You will receive callback events when voice is detected.
-You can then use RTM to broadcast that within the group.
 
     AgoraRTCUtils.startVoiceActivityDetection(this.localTracks.audioTrack);
     AgoraRTCUtilEvents.on("VoiceActivityDetected",agoraApp.handleVADEvents);
+   
+This utility is detecting voice from the local microphone input.
+
+You can then use Agora RTM (Realtime Messaging) to broadcast VAD message within the group.
+For examples of this, see handleVADEvents() and handleRTM() in [../app.js](../app.js) .
 
 ### Inbound Remote Audio Levels
 Be notified when the audioLevel on any remote stream exceeds zero
