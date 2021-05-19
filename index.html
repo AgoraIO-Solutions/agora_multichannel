@@ -7,11 +7,13 @@
   <link rel="stylesheet" href="./assets/bootstrap.min.css">
   <script src="./sdk/ng4.5b.js"></script>
   <script src="./sdk/AgoraRTM.js"></script>
-  <script src="./sdk/AgoraRTCUtil.js?gg=cach26"></script>
+
+  <script src="./sdk/AgoraRTCUtil.js?gg=cach28"></script>
   <!--script src="./sdk/AgoraWatchYT.js"></script-->
-  <script src="./sdk/AgoraWatchParty.js?a444=cach26"></script>
-  <link rel="stylesheet" href="./index.css?1=cach22">
-  <link rel="stylesheet" href="./grid.css?1=cach22">
+  <script src="./sdk/AgoraWatchParty.js?a444=cach28"></script>
+  <link rel="stylesheet" href="./index.css?1=cach28">
+  <link rel="stylesheet" href="./grid.css?1=cach28">
+
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
@@ -126,11 +128,11 @@
           -->
           <label class="mp4label" for="fname">Content URL </label>
 
-          <input type="text" class="watch_input" id="watchid" value="https://sokool.io/media/h264_720.mp4">  
+          <input type="text" class="watch_input" id="watchid" value="https://sa-utils.agora.io/media/h264_720.mp4">  
           <select id="watchiddd" onchange="document.getElementById('watchid').value=(this.value); ">
               <option></option>
-              <option>https://sokool.io/media/h264_720.mp4</option>
-              <option>https://sokool.io/media/h264_1080_best.mp4</option>
+              <option>https://sa-utils.agora.io/media/h264_720.mp4</option>
+              <option>https://sa-utils.agora.io/media/h264_1080_best.mp4</option>
           </select>
 
           <img src='img/cue.webp' title="Load watch party video" onclick=" agoraApp.stopScreensharePublish(); agoraWatchParty.cueVideo();  agoraWatchParty.hidePlayerControls();" id="cue"
@@ -173,4 +175,8 @@
 
 <script src="./assets/jquery-3.4.1.min.js"></script>
 <script src="./assets/bootstrap.bundle.min.js"></script>
-<script src="./app.js?cach26"></script>
+<<<<<<< HEAD
+<script src="./app.js?cach28"></script>
+=======
+<script src="./app.js?cach27"></script>
+>>>>>>> d6784d1475e4395479288041b3a8bc59095d4577
