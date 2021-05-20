@@ -18,22 +18,27 @@ This repo contains a web browser demo app for desktop and mobile using the Agora
 The main algorithms in this demo have been abstracted into a javascript module allowing them to be easily added to other projects built with the Agora 4.x Web SDKs.
 <br/> For more information, please see [AgoraRTCUtils.js Readme](https://github.com/AgoraIO-Solutions/agora_multichannel/tree/master/sdk) 
 
+## Screenshots
 
-## Small Grid
+### Small Grid
 
 ![](https://raw.githubusercontent.com/AgoraIO-Solutions/agora_multichannel/master/docs/Grid1.png)
 
-## Larger Grid
+### Larger Grid
 
 ![](https://raw.githubusercontent.com/AgoraIO-Solutions/agora_multichannel/master/docs/Grid2.png)
 
-## Start the Party
+### Start the Party
 
 ![](https://raw.githubusercontent.com/AgoraIO-Solutions/agora_multichannel/master/docs/StartWatchParty.png)
 
-## Watch Party
+### Watch Party
 
 ![](https://raw.githubusercontent.com/AgoraIO-Solutions/agora_multichannel/master/docs/Watch1.png)
+
+### iPhone
+
+![](https://raw.githubusercontent.com/AgoraIO-Solutions/agora_multichannel/master/docs/mobile.png)
 
 
 ## Multi Channel Implementation
