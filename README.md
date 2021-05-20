@@ -19,6 +19,8 @@ The main algorithms in this demo have been abstracted into a javascript module a
 <br/> For more information, please see [AgoraRTCUtils.js Readme](https://github.com/AgoraIO-Solutions/agora_multichannel/tree/master/sdk) 
 
 
+![grid](https://raw.githubusercontent.com/AgoraIO-Solutions/agora_multichannel/master/docs/Grid1.png)
+
 ## Description
 This demo project uses multiple Agora channels to increase the number of remote video streams displayed on screeen beyond the limits of a single channel.
 
