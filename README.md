@@ -19,9 +19,24 @@ The main algorithms in this demo have been abstracted into a javascript module a
 <br/> For more information, please see [AgoraRTCUtils.js Readme](https://github.com/AgoraIO-Solutions/agora_multichannel/tree/master/sdk) 
 
 
-![grid](https://raw.githubusercontent.com/AgoraIO-Solutions/agora_multichannel/master/docs/Grid1.png)
+## Small Grid
 
-## Description
+![](https://raw.githubusercontent.com/AgoraIO-Solutions/agora_multichannel/master/docs/Grid1.png)
+
+## Larger Grid
+
+![](https://raw.githubusercontent.com/AgoraIO-Solutions/agora_multichannel/master/docs/Grid2.png)
+
+## Start the Party
+
+![](https://raw.githubusercontent.com/AgoraIO-Solutions/agora_multichannel/master/docs/StartWatchParty.png)
+
+## Watch Party
+
+![](https://raw.githubusercontent.com/AgoraIO-Solutions/agora_multichannel/master/docs/Watch1.png)
+
+
+## Multi Channel Implementation
 This demo project uses multiple Agora channels to increase the number of remote video streams displayed on screeen beyond the limits of a single channel.
 
 This demo is configured to use 4 channels (maxClients=4) allowing for up to 16*4=64 remote videos.
