@@ -5,6 +5,7 @@
     gap: 4px;
     grid-auto-rows: minmax(auto, auto);
     height: 100%;
+    overflow: hidden;
   }
 
   .main_body_mobile{

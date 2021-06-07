@@ -2,6 +2,7 @@
 
   body{
   background-color: #222 !important;
+  overflow: hidden;
   }
   .focussed-video{
   ffbackground-color: #111;
@@ -12,7 +13,7 @@
   -webkit-border-radius: 6px;
   border-radius: 6px;
   overflow: hidden;
-  object-fit: contain !important;
+  iobject-fit: contain !important;
   }
 
   .agora_select {
@@ -21,6 +22,43 @@
   width: 240px;
   background-color: #111;
   color: #ddd;
+  }
+
+  .fixed_stat{
+    display: inline-block;
+    width: 90px;
+    text-align: left;
+  }
+
+  .fixed_stat_short{
+    display: inline-block;
+    text-align: left;
+    width: 20px;
+  }
+
+  .stats_display_inner{
+    background-color: rgb(77, 57, 4);
+    padding: 2px;
+    opacity: 0.9;
+  }
+
+  .stats_display {
+    color:#ffbf00;
+    margin-left: 8px;
+    margin-top: 8px;
+    position: absolute;
+    z-index: 100;
+    font-size: 14px;
+  }
+
+
+  .stats_display_local {
+    color:#ae47de;
+    margin-left: 8px;
+    margin-top: 8px;
+    position: absolute;
+    z-index: 100;
+    font-size: 14px;
   }
 
   .mic_talking {
@@ -51,6 +89,10 @@
   ffbackground-color: #111;
   width:100% !important;
   height:100% !important;
+  background-image: url("./img/novideo.png") ;
+  background-repeat: no-repeat;
+  background-size: auto 50%;
+  background-position: center 50%;
   }
 
   .remote_video {
@@ -259,6 +301,7 @@
 
   #grid {
   margin-left: 4px;
+  overflow: hidden;
   }
 
 
@@ -346,4 +389,5 @@
   
   #agoravideoplayer{
     width: 100%;
+    border-radius: 10px;
   }

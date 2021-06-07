@@ -3,16 +3,16 @@
 
 <head>
   <meta charset="utf 8">
-  <title>Agora Mega Grid</title>
+  <title>Agora SA Demo</title>
   <link rel="stylesheet" href="./assets/bootstrap.min.css">
-  <script src="./sdk/ng4.5b.js"></script>
+  <script src="./sdk/AgoraRTC_N-4.5.0.js"></script>
   <script src="./sdk/AgoraRTM.js"></script>
 
-  <script src="./sdk/AgoraRTCUtil.js?gg=cach28"></script>
+  <script src="./sdk/AgoraRTCUtil.js?gg=cach33"></script>
   <!--script src="./sdk/AgoraWatchYT.js"></script-->
-  <script src="./sdk/AgoraWatchParty.js?a444=cach28"></script>
-  <link rel="stylesheet" href="./index.css?1=cach28">
-  <link rel="stylesheet" href="./grid.css?1=cach28">
+  <script src="./sdk/AgoraWatchParty.js?a444=cach33"></script>
+  <link rel="stylesheet" href="./index.css?1=cach33">
+  <link rel="stylesheet" href="./grid.css?1=cach33">
 
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
@@ -128,9 +128,10 @@
           -->
           <label class="mp4label" for="fname">Content URL </label>
 
-          <input type="text" class="watch_input" id="watchid" value="https://sa-utils.agora.io/media/h264_720.mp4">  
+          <input type="text" class="watch_input" id="watchid" value="https://sa-utils.agora.io/media/v223.mp4">  
           <select id="watchiddd" onchange="document.getElementById('watchid').value=(this.value); ">
               <option></option>
+              <option>https://sa-utils.agora.io/media/v223.mp4</option>
               <option>https://sa-utils.agora.io/media/h264_720.mp4</option>
               <option>https://sa-utils.agora.io/media/h264_1080_best.mp4</option>
           </select>
@@ -162,7 +163,7 @@
 
 
     <div id="grid" class="grid_wrapper">
-      <div id="local-player" class="local_video hidden"></div>
+      <div id="local-player" class="local_video hidden"><div id="stats_local" class="stats_display_local"></div></div>
     </div>
 
   </div>
@@ -175,8 +176,4 @@
 
 <script src="./assets/jquery-3.4.1.min.js"></script>
 <script src="./assets/bootstrap.bundle.min.js"></script>
-<<<<<<< HEAD
-<script src="./app.js?cach28"></script>
-=======
-<script src="./app.js?cach27"></script>
->>>>>>> d6784d1475e4395479288041b3a8bc59095d4577
+<script src="./app.js?cach33"></script>
