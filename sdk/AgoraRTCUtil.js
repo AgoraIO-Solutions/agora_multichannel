@@ -40,6 +40,10 @@ var AgoraRTCUtils = (function () {
   var _brLowObserved = 0;
   var _maxProfileDueToLowFPS = 1000;
   var _brHighObserved = 0;
+  var _remoteVideoPublisherCount=-1; 
+
+  var _tempMaxProfile=null;
+  var _switchForFPSAndBR=false;
 
   var _outboundVideoStats={
     profile : "",
@@ -51,17 +55,21 @@ var AgoraRTCUtils = (function () {
 
 
   var _profiles = [
-    // 180p for mobile only, putting frameRate 15 here doesn't seem to stick
-    { id: "180p", width: 320, height: 180, frameRate: 24, bitrateMin: 150,  moveDownThreshold: 120, moveUpThreshold: 40, bitrateMax: 500 }, 
-    { id: "360p_low", width: 640, height: 360, frameRate: 24, bitrateMin: 120, moveDownThreshold: 120, moveUpThreshold: 600, bitrateMax: 1000 },
-    { id: "360p_11", width: 640, height: 360, frameRate: 24, bitrateMin: 400, moveDownThreshold: 250, moveUpThreshold: 650, bitrateMax: 1000 },
-   // { id: "720p", width: 1280, height: 720, frameRate: 24, bitrateMin: 600, moveDownThreshold: 650, moveUpThreshold: 1200, bitrateMax: 1800 },
+  //  { id: "90p", width: 160, height: 90, frameRate: 24, bitrateMin: 100,  moveDownThreshold: 40, moveUpThreshold: 100, bitrateMax: 200, maxRemoteUsers: 100 }, 
+    { id: "180p", width: 320, height: 180, frameRate: 24, bitrateMin: 150,  moveDownThreshold: 80, moveUpThreshold: 120, bitrateMax: 500, maxRemoteUsers: 16 }, 
+    { id: "360p_low", width: 640, height: 360, frameRate: 24, bitrateMin: 120, moveDownThreshold: 120, moveUpThreshold: 600, bitrateMax: 1000, maxRemoteUsers: 4 },
+    { id: "360p_11", width: 640, height: 360, frameRate: 24, bitrateMin: 400, moveDownThreshold: 250, moveUpThreshold: 650, bitrateMax: 1000, maxRemoteUsers: 4 },
+    { id: "720p", width: 1280, height: 720, frameRate: 24, bitrateMin: 600, moveDownThreshold: 650, moveUpThreshold: 1200, bitrateMax: 1800, maxRemoteUsers: 1 },
     //  { id: "1080p", width: 1920, height: 1080, frameRate: 24, bitrateMin: 600, bitrateMinDesired: 1200, bitrateMax: 3600 },
   ];
 
   // private methods
   function isIOS() {
-    return (/iPhone|iPad|iPod/i.test(navigator.userAgent))
+    return (/iPhone|iPad|iPod/i.test(navigator.userAgent));
+  }
+
+  function isMobile() {
+    return (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
   }
 
   function getProfileIndex(profile) {
@@ -78,24 +86,28 @@ var AgoraRTCUtils = (function () {
     videoStats = _publishClient.getLocalVideoStats();
 
     var profile = _profiles[_currentProfile];
+    var profileUp = null;
+    if (_currentProfile<_profiles.length-1) {
+      profileUp=_profiles[_currentProfile+1];
+    }
     var sendBitratekbps = Math.floor(videoStats.sendBitrate / 1000);
 
     // check encoding FPS not too low
-    if (videoStats.sendFrameRate && videoStats.sendFrameRate > 0 && videoStats.sendFrameRate < (profile.frameRate * MinFPSPercent / 100)) {
+    if (_switchForFPSAndBR && videoStats.sendFrameRate && videoStats.sendFrameRate > 0 && videoStats.sendFrameRate < (profile.frameRate * MinFPSPercent / 100)) {
       _fpsLowObserved++;
     } else {
       _fpsLowObserved = 0;
     }
 
     // check outbound bitrate not too low for this resolution
-    if (videoStats.sendResolutionWidth > 0 && sendBitratekbps < profile.moveDownThreshold && sendBitratekbps > MinVideoKbps) {
+    if (_switchForFPSAndBR && videoStats.sendResolutionWidth > 0 && sendBitratekbps < profile.moveDownThreshold && sendBitratekbps > MinVideoKbps) {
       _brLowObserved++;
     } else {
       _brLowObserved = 0;
     }
 
     // see if performing well enough to increase profile
-    if (videoStats.sendResolutionWidth > 0 && (videoStats.sendResolutionWidth == profile.width || videoStats.sendResolutionWidth == profile.height) && sendBitratekbps > profile.moveUpThreshold) {
+    if (_switchForFPSAndBR && videoStats.sendResolutionWidth > 0 && (videoStats.sendResolutionWidth == profile.width || videoStats.sendResolutionWidth == profile.height) && sendBitratekbps > profile.moveUpThreshold) {
       _brHighObserved++;
     } else {
       _brHighObserved = 0;
@@ -112,11 +124,14 @@ var AgoraRTCUtils = (function () {
     else if (_fpsLowObserved > ResultCountToStepDown) {
       _maxProfileDueToLowFPS = _currentProfile - 1; // do not return here
       changeProfile(_currentProfile - 1); // reduce profile
-    }
-
-    // after about 5 seconds of very good
-    if (_fpsLowObserved == 0 && _brLowObserved == 0 && _currentProfile < _maxProfileDueToLowFPS && _brHighObserved > ResultCountToStepUp && _currentProfile < _profiles.length - 1) {
-      changeProfile(_currentProfile + 1); // increase profile
+    } else if (_remoteVideoPublisherCount>0 &&  profile.maxRemoteUsers < _remoteVideoPublisherCount) {
+      changeProfile(_currentProfile - 1); // reduce profile
+    }  else if (_tempMaxProfile!=null && _currentProfile>_tempMaxProfile) {
+      changeProfile(_tempMaxProfile); // reduce profile 
+    } else if (!_tempMaxProfile &&  profileUp && profileUp.maxRemoteUsers >= _remoteVideoPublisherCount ) { // after about 5 seconds of very good and can handle that many users
+      if (_fpsLowObserved == 0 && _brLowObserved == 0 && _currentProfile < _maxProfileDueToLowFPS && (_brHighObserved > ResultCountToStepUp || !_switchForFPSAndBR) && _currentProfile < _profiles.length - 1) {
+        changeProfile(_currentProfile + 1); // increase profile
+      }
     }
 
     _outboundVideoStats={
@@ -139,8 +154,9 @@ var AgoraRTCUtils = (function () {
     _brHighObserved = 0;
     _fpsLowObserved = 0;
     var profile = _profiles[profileInd];
-    console.log("Auto Adjust Changing Profile to " + profile.id);
+    
     if (_publishClient && _publishClient._highStream && _publishClient._highStream.videoTrack) {
+      console.log("Auto Adjust Changing Profile to " + profile.id);
       _publishClient._highStream.videoTrack.setEncoderConfiguration({ width: profile.width, height: profile.height, frameRate: profile.frameRate, bitrateMin: profile.bitrateMin, bitrateMax: profile.bitrateMax });
     }
   }
@@ -273,6 +289,18 @@ var AgoraRTCUtils = (function () {
   var _userStatsMap={};
   var _clientStatsMap={};
   
+  const RemoteStatusGood=0;
+  const RemoteStatusFair=1;
+  const RemoteStatusPoor=2;
+  const RemoteStatusCritical=3;
+
+ var _clientStatsTrackMap={
+    RemoteStatus: -1,
+    RemoteStatusStart: 0,
+    RemoteStatusDuration: 0,
+  };
+
+
  
   function calculateRenderRateVolatility(statsMap){
 
@@ -292,8 +320,11 @@ var AgoraRTCUtils = (function () {
     for(j=0;j<arr.length;j+=1){
        vol+= Math.abs(arr[j]- statsMap.renderRateMean);
     }
-    statsMap.renderRateStdDeviation=vol/arr.length;
-    statsMap.renderRateStdDeviationPerc=(statsMap.renderRateStdDeviation/statsMap.renderRateMean)*100
+    if (arr.length>=MaxRenderRateSamples){ // don't report vol on limited set
+      statsMap.renderRateStdDeviation=vol/arr.length;
+      statsMap.renderRateStdDeviationPerc=(statsMap.renderRateStdDeviation/statsMap.renderRateMean)*100
+     // console.log("rrvol "+statsMap.renderRateStdDeviationPerc+" "+arr); 
+    }
    
   }
 
@@ -303,7 +334,7 @@ var AgoraRTCUtils = (function () {
     // look for a volatile render rate 
     // emit results at end of rU list 
     _clientStatsMap={
-      UserCount : 0,
+      RemoteSubCount : 0,
       RecvBitrate : 0,
       SendBitrate : 0,
       MaxOutgoingAvailableBandwidth : 0,
@@ -313,6 +344,10 @@ var AgoraRTCUtils = (function () {
       SumRxAggRes: 0,
       AvgRxRVol: 0,
       AvgRxNR: 0,
+      MinRemoteDuration : -1,
+      RemoteStatusDuration: 0,
+      RemoteStatus: 0,
+      RemoteStatusExtra: 0,
       TxProfile : "",
       TxSendBitratekbps :0,
       TxBrLowObserved: 0,
@@ -341,6 +376,7 @@ var AgoraRTCUtils = (function () {
                   lastStatsRead : 0,
                   lastNack : 0,
                   nackRate : 0,
+                  packetChange: 0,
                   lastPacketsRecvd: 0,
                   renderFrameRate: 0,
                   renderRateMean: 0,
@@ -363,11 +399,16 @@ var AgoraRTCUtils = (function () {
                     var nackChange = (nack -  _userStatsMap[uid].lastNack);
                     var packetChange = (packetsReceived -  _userStatsMap[uid].lastPacketsRecvd);
                     var timeDiff = now -  _userStatsMap[uid].lastStatsRead;
-                    var nackRate = Math.floor((nackChange / packetChange) * (timeDiff / 10));
+                    var nackRate = 0;
+                    if (packetChange>0 && nackChange>0 ) {
+                      nackRate = Math.floor((nackChange / packetChange) * (timeDiff / 10));
+                    }
                     _userStatsMap[uid].lastStatsRead = now;
                     _userStatsMap[uid].lastNack = nack;
                     _userStatsMap[uid].nackRate = nackRate;
                     _userStatsMap[uid].lastPacketsRecvd = packetsReceived;
+                    _userStatsMap[uid].packetChange = packetChange;
+                    
                    // console.log(uid+" nackRate "+nackRate);
                    }
                 })
@@ -376,67 +417,38 @@ var AgoraRTCUtils = (function () {
               const remoteTracksStats = { video: client.getRemoteVideoStats()[uid], audio: client.getRemoteAudioStats()[uid] };
 
               _userStatsMap[uid].renderFrameRate=Number(remoteTracksStats.video.renderFrameRate);
+              if (_userStatsMap[uid].receiveResolutionWidth!=Number(remoteTracksStats.video.receiveResolutionWidth).toFixed(0)){
+                _userStatsMap[uid].renderRates=[]; // clear out array when res changes
+              }
               _userStatsMap[uid].receiveResolutionWidth=Number(remoteTracksStats.video.receiveResolutionWidth).toFixed(0);
               _userStatsMap[uid].receiveResolutionHeight=Number(remoteTracksStats.video.receiveResolutionHeight).toFixed(0);
-              _userStatsMap[uid].receiveBitrate=Number(remoteTracksStats.video.receiveBitrate/1000).toFixed(0);              
-              _userStatsMap[uid].totalDuration=Number(remoteTracksStats.video.totalDuration).toFixed(0);
+              _userStatsMap[uid].receiveBitrate=Number(remoteTracksStats.video.receiveBitrate/1000).toFixed(0);        
+              if ( _userStatsMap[uid].packetChange>0) {      
+                _userStatsMap[uid].totalDuration=Number(remoteTracksStats.video.totalDuration).toFixed(0);
+              } else {
+                _userStatsMap[uid].totalDuration=-1;
+              }
 
               if ( _userStatsMap[uid].renderFrameRate > 0 ) {
                 calculateRenderRateVolatility(_userStatsMap[uid]);
               }
 
-              // emit user
-              AgoraRTCUtilEvents.emit("RemoteVideoStatistics", _userStatsMap[uid]);
+              // emit user level stats
+              AgoraRTCUtilEvents.emit("RemoteUserVideoStatistics", _userStatsMap[uid]);
 
-              _clientStatsMap.SumRxRVol=_clientStatsMap.SumRxRVol+_userStatsMap[uid].renderRateStdDeviationPerc;
-              _clientStatsMap.SumRxNR=_clientStatsMap.SumRxNR+_userStatsMap[uid].nackRate;
-              _clientStatsMap.UserCount=_clientStatsMap.UserCount + 1;
+              if ( _userStatsMap[uid].packetChange>0 &&  _userStatsMap[uid].totalDuration>5) // when people drop they remain for a while
+              {
+                _clientStatsMap.SumRxRVol=_clientStatsMap.SumRxRVol+_userStatsMap[uid].renderRateStdDeviationPerc;
+                if (_userStatsMap[uid].nackRate>0 && !isNaN(_userStatsMap[uid].nackRate)) {
+                  _clientStatsMap.SumRxNR=_clientStatsMap.SumRxNR+_userStatsMap[uid].nackRate;
+                }
+                _clientStatsMap.RemoteSubCount=_clientStatsMap.RemoteSubCount + 1;
+                _clientStatsMap.SumRxAggRes= _clientStatsMap.SumRxAggRes+(remoteTracksStats.video.receiveResolutionWidth*remoteTracksStats.video.receiveResolutionHeight)
+              } 
 
-              _clientStatsMap.SumRxAggRes= _clientStatsMap.SumRxAggRes+(remoteTracksStats.video.receiveResolutionWidth*remoteTracksStats.video.receiveResolutionHeight)
-              // calculate combined stats \\ 
-              
-              // avg nackRate
-
-              // avg rrVol
-
-              // min/max/avg nackRate, rrVol
-
-              // outliers 
-
-              // does nackRate always increase when rrVol does?
-              
-              // does rrVol increase when nackRate does?
-
-              // does rrVol increase if remote uplink packet loss present?
-
-              // does nackRate increase if remote has upload packet loss?
-
-              // do we want to unsubsribe completely in the case of just a few streamas
-
-              // if increased nackRate is due to my connection it will be seen for all remotes
-              
-              // do we want to reduce outgoing fps if lots of remote RV? Ensure outgoing FPS good by limiting RVs also
-            
-/*
-            If all Rr vol > 10 then local CPU uissue
-
-            network limits bitrate (TxBr and RxBr)
-            cpu/gpu limits area of video to encode or decode (TxArea, RxArea)
-
-            switching between high/low/no streams changes RxBr and RxArea 
-            switching between profile/no camera changes  TxBr and TxArea
-
-            All 
-
-            It is possible to get individual high RxRVol if remote fps is volatile due to CPU issues
-            but if all clients ensure they produce constant fps by reducing the encoding profile or switching off cam if necessary then that is less likely
-            When there is a local CPU issue then all RxRVol will be > 10 and RxArea should be reduced
-            When there is local downlink issue all RxNR will be > 5 and RxBr
-
-            AvgRxRVol * AvgRxNR will determine what the Total RxBr and RxArea should do (increase/decrease/hold)
-
-*/
-
+              if (_userStatsMap[uid].totalDuration>-1 && (_clientStatsMap.MinRemoteDuration<0 || _userStatsMap[uid].totalDuration<_clientStatsMap.MinRemoteDuration)){
+                _clientStatsMap.MinRemoteDuration=_userStatsMap[uid].totalDuration;
+              }              
 
             }
           }
@@ -458,33 +470,152 @@ var AgoraRTCUtils = (function () {
 
 
         if (client._highStream) {
-
           var   outgoingStats = client.getLocalVideoStats();
-
           _clientStatsMap.TxSendBitratekbps=Math.floor(outgoingStats.sendBitrate / 1000);
           _clientStatsMap.TxSendFrameRate=outgoingStats.sendFrameRate;
           _clientStatsMap.TxSendResolutionWidth=outgoingStats.sendResolutionWidth;
           _clientStatsMap.TxSendResolutionHeight=outgoingStats.sendResolutionHeight;
-
         }
-
-      
-
 
       }
     }
     // calculate aggregate user stats and aggregate channel (client) stats
 
-    _clientStatsMap.AvgRxRVol=_clientStatsMap.SumRxRVol/_clientStatsMap.UserCount;
-    _clientStatsMap.AvgRxNR=_clientStatsMap.SumRxNR/_clientStatsMap.UserCount;
+    // don't report vvol on one user as gateway interferes on its own in 2 person call
+    if (_clientStatsMap.RemoteSubCount>1) {
+    _clientStatsMap.AvgRxRVol=_clientStatsMap.SumRxRVol/_clientStatsMap.RemoteSubCount;
+    _clientStatsMap.AvgRxNR=_clientStatsMap.SumRxNR/_clientStatsMap.RemoteSubCount;
+    } else {
+      _clientStatsMap.AvgRxRVol=-1;
+      _clientStatsMap.AvgRxNR=-1;
+    }
+    
+
+    /// determine remote status, start and duration
+    /// reset duration for good/critical/poor
+    
+    if (_clientStatsMap.AvgRxRVol > 12 ||  _clientStatsMap.AvgRxNR > 12 ) {
+      // critical or poor
+
+      if (_clientStatsTrackMap.RemoteStatus!=RemoteStatusPoor) {
+        _clientStatsTrackMap.RemoteStatus=RemoteStatusPoor;
+        _clientStatsTrackMap.RemoteStatusStart=Date.now();        
+      } else {
+        _clientStatsTrackMap.RemoteStatusDuration=Date.now()-_clientStatsTrackMap.RemoteStatusStart;        
+      }
+
+      if (_clientStatsMap.AvgRxRVol > 20 ||  _clientStatsMap.AvgRxNR > 30 ) {
+        _clientStatsMap.RemoteStatusExtra=RemoteStatusCritical;
+      } else {
+        _clientStatsMap.RemoteStatusExtra=RemoteStatusPoor;
+      }
+    }  
+
+    else if (_clientStatsMap.AvgRxRVol > 7 ||  _clientStatsMap.AvgRxNR > 4 ) {
+      // critical 
+      if (_clientStatsTrackMap.RemoteStatus!=RemoteStatusFair ) {
+        _clientStatsTrackMap.RemoteStatus=RemoteStatusFair;
+        _clientStatsTrackMap.RemoteStatusStart=Date.now();        
+      } else {
+        _clientStatsTrackMap.RemoteStatusDuration=Date.now()-_clientStatsTrackMap.RemoteStatusStart;
+      }
+    } else {
+      if (_clientStatsTrackMap.RemoteStatus!=RemoteStatusGood ) {
+        _clientStatsTrackMap.RemoteStatus=RemoteStatusGood;
+        _clientStatsTrackMap.RemoteStatusStart=Date.now();        
+      } else {
+        _clientStatsTrackMap.RemoteStatusDuration=Date.now()-_clientStatsTrackMap.RemoteStatusStart;
+      }
+    }
+
 
     // will only be set if monitor outbound running
     _clientStatsMap.TxProfile=_outboundVideoStats.profile;
     _clientStatsMap.TxBrLowObserved=_outboundVideoStats.brLowObserved;
     _clientStatsMap.TxFpsLowObserved=_outboundVideoStats.fpsLowObserved;
 
+    _clientStatsMap.RemoteStatusDuration=Math.floor(_clientStatsTrackMap.RemoteStatusDuration/1000);
+    _clientStatsMap.RemoteStatus= _clientStatsTrackMap.RemoteStatus;
+    
+    //console.log(" setting RemoteStatus to "+_clientStatsTrackMap.RemoteStatus )
 
     AgoraRTCUtilEvents.emit("ClientVideoStatistics",_clientStatsMap);
+
+
+    /*
+     Here we can fire events to advise whether remote streams should be reduced in quality or turned off
+     It should be up to the calling application to decide how to achieve this because it may have specific priority of which video to keep 
+     Or the calling app can provide required access to have this module manage the remote streams and outbound encoding profile 
+     
+     Subject overview
+            A user's network limits bitrate throughput (TxBr and RxBr)
+            A device's cpu/gpu limits area of video to encode or decode (TxArea, RxArea)
+
+            switching between high/low/no streams changes RxBr and RxArea 
+            switching between profile/no camera changes  TxBr and TxArea
+
+
+            It is possible to get individual high RxRVol if remote fps is volatile due to CPU issues
+            but if all clients ensure they produce constant fps by reducing the encoding profile or switching off cam if necessary then that is less likely
+            When there is a local CPU issue then all RxRVol will be > 10 and RxArea should be reduced
+            When there is a significant local downlink issue all RxNR will be > 5 and RxBr
+
+            AvgRxRVol * AvgRxNR will determine what the Total RxBr and RxArea should do (increase/decrease/hold)
+     
+     Q: does nackRate always increase when rrVol does?
+     A: No, I have observed high rrVol due to low CPU while nackRate can remain zero
+    
+     Q:does rrVol increase when nackRate does?
+     A: to some degree yes. This might be nack related issue in VOSWEB 
+
+     Q: does rrVol increase if remote uplink packet loss present?
+     A: a small amount
+
+     Q: does nackRate increase if remote has upload packet loss?
+     A: yes, specific to this remote connection
+
+     Q: do we want to unsubsribe completely in the case of just a few streams
+    
+     do we want to reduce outgoing resolution if lots of remote RV? Ensure outgoing FPS good by limiting RVs also
+            
+    */
+/*
+
+Implementation
+
+CPU struggling 
+Network struggling 
+Experiments and observations
+            If all Rr vol > 10 then local CPU uissue
+
+            The events will be 
+
+strategy
+  Reducing the number of high streams (if any)
+
+  Reducing the number of streams
+
+  Reducing number of audio streams
+
+  Needs time to settle, especially after call start
+
+
+  Only do 720p if 2 people in the call
+  autoAdjustResolution
+
+
+
+  Observations
+
+  Under congestion (insufficient network) the nack and RVol go super high, under this scenario the app should drop all remotes instantly
+
+
+  2.5m down then 1m limit RVol 33 NRA 30-100
+            
+
+
+*/
+
   }
 
 
@@ -492,8 +623,9 @@ var AgoraRTCUtils = (function () {
 
 
   return { // public interfaces
-    startAutoAdjustResolution: function (client, initialProfile) {
+    startAutoAdjustResolution: function (client, initialProfile, switchForFPSAndBR) {
       _publishClient = client;
+      _switchForFPSAndBR = switchForFPSAndBR;
       _currentProfile = getProfileIndex(initialProfile);
       if (_currentProfile < 0)
         throw 'Auto Adjust Profile Not Found';
@@ -510,8 +642,22 @@ var AgoraRTCUtils = (function () {
     changeDown: function () {
       changeProfile(_currentProfile - 1); // reduce profile
     },
+    setTempMaxProfile: function (tempMaxProfile) {
+      if (tempMaxProfile) {
+       _tempMaxProfile=getProfileIndex(tempMaxProfile);
+      }
+      else {
+        _tempMaxProfile=null;
+      }
+    }, 
+    setRemoteVideoPublisherCount: function (remoteVideoPublisherCount_) {
+      _remoteVideoPublisherCount=remoteVideoPublisherCount_;
+    },      
     isIOS: function () {
       return isIOS();
+    },
+    isMobile: function () {
+      return isMobile();
     },
     setRTCClients: function (clientArray, numClients) {
       _rtc_clients = clientArray;
@@ -553,8 +699,10 @@ var AgoraRTCUtils = (function () {
       clearInterval(_monitorRemoteCallStatsInterval);
       _monitorRemoteCallStatsInterval = null;
     },
-
-
+    RemoteStatusGood: RemoteStatusGood,
+    RemoteStatusFair: RemoteStatusFair,
+    RemoteStatusPoor: RemoteStatusPoor,
+    RemoteStatusCritical: RemoteStatusCritical,
   };
 })();
 

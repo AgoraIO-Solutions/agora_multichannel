@@ -13,6 +13,9 @@
   }
 
 
+
+
+
   .main_body_mobile_landscape{
     gap: 2px !important;
   }
@@ -21,9 +24,6 @@
   .main_body_mobile_portrait{
     gap: 8px !important;
   }
-
-
-
 
   .old_main_body_mobile_landscape {
     grid-template-columns: repeat(3, 1fr) !important;
@@ -64,7 +64,7 @@
   }
 
   .headerOpen {
-    height: 140px !important;
+    height: 100px !important;
   }
 
   .headerOpenPlay {
