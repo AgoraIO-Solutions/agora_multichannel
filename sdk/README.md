@@ -51,3 +51,12 @@ To avoid losing the camera feed on iOS when switching resolution you should expl
      
      await agoraApp.localTracks.videoTrack.setDevice(currentCam.deviceId);
      await agoraApp.localTracks.audioTrack.setDevice(currentMic.deviceId);
+     
+     
+### Monitor Remote Call Statistics
+This will provide regular callbacks containing statistics for each remote user in the channel together with client wide stats for managing the ramp up and down of stream qualities.
+
+      AgoraRTCUtils.startRemoteCallStatsMonitor(500); // ms interval
+      AgoraRTCUtilEvents.on("RemoteUserVideoStatistics", agoraApp.processRemoteUserVideoStatistics);
+      AgoraRTCUtilEvents.on("ClientVideoStatistics", agoraApp.processAllClientVideoStatistics);
+
