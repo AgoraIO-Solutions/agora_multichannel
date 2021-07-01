@@ -30,29 +30,50 @@ var AgoraRTCUtils = (function () {
   var AdjustFrequency = 500; // ms between checks
   var ResultCountToStepUp = 6; // number of consecutive positive results before step up occurrs
   var ResultCountToStepDown = 10; // number of consecutive negative results before step down occurrs
+  var ResultCountToStepDownFPS = 8; // number of consecutive negative results before step down occurrs
   var MinFPSPercent = 90; // below this percentage FPS will a trigger step down
   var MinVideoKbps = 100; // below this and the video is likely off or static 
+  var MaxFPSSamples=8; // 4 seconds
 
   var _autoAdjustInterval;
   var _publishClient;
   var _currentProfile = 0;
   var _fpsLowObserved = 0;
   var _brLowObserved = 0;
+  var _fpsVol=-1;
   var _maxProfileDueToLowFPS = 1000;
   var _brHighObserved = 0;
   var _remoteVideoPublisherCount=-1; 
 
   var _tempMaxProfile=null;
+  var _increaseResolutionAt=0;
   var _switchForFPSAndBR=false;
+  var _fpsRates=[];
+
+  // if I am looking at remote user in content area and his resolution is below 360p_11
+  // send request to increase resolution if possible to 360p_11
+  // we dont want everyone in the room to have to keep requesting when it is standard speaker mode
+  // its possible though that even when speaking all remotes have you small
+
+  // we dont want to keep toggling
+
+  // option 1: increase res when talking: no good because everyone might be in grid mode
+  /*
+    // option 2: send the current large person notification to that person every 3 seconds or if following speaker - until not speaking
+  //           This person will drop back down if no request is received 
+  
+            if receiver is follow speaker and speaker is not >=360p then send him message telling him to stay high until speaking stops
+            if receiver is manual viewer and remote not >=360p tell him to stay high while pings sent.
+  */ 
 
   var _outboundVideoStats={
     profile : "",
     sendBitratekbps :0,
     brLowObserved: 0,
     fpsLowObserved: 0,
+    fpsVol: 0,
     sendFrameRate : 0
   };
-
 
   var _profiles = [
   //  { id: "90p", width: 160, height: 90, frameRate: 24, bitrateMin: 100,  moveDownThreshold: 40, moveUpThreshold: 100, bitrateMax: 200, maxRemoteUsers: 100 }, 
@@ -81,6 +102,29 @@ var AgoraRTCUtils = (function () {
     return -1;
   }
 
+  function calculateOutboundFPSVolatility(fps){
+  
+    if (_fpsRates.length >= MaxFPSSamples) {
+       _fpsRates.shift();
+    }
+    _fpsRates.push(fps);
+
+    var i,j,total = 0;
+    for(i=0;i<_fpsRates.length;i+=1){
+        total+=_fpsRates[i];
+    }
+    var fpsMean = total/_fpsRates.length;
+    var vol=0;
+    for(j=0;j<_fpsRates.length;j+=1){
+       vol+= Math.abs(_fpsRates[j]-fpsMean);
+    }
+    if (_fpsRates.length>=MaxFPSSamples){ // don't report vol on limited set
+      var dev=vol/_fpsRates.length;
+      return (dev/fpsMean)*100;
+    }
+    return 0
+  }
+
   function autoAdjustResolution() {
     // real time video stats
     videoStats = _publishClient.getLocalVideoStats();
@@ -92,8 +136,13 @@ var AgoraRTCUtils = (function () {
     }
     var sendBitratekbps = Math.floor(videoStats.sendBitrate / 1000);
 
+    if (videoStats.sendFrameRate && videoStats.sendFrameRate > 0 ) {
+      _fpsVol=calculateOutboundFPSVolatility(videoStats.sendFrameRate);
+      //console.log(" calculateOutboundFPSVolatility "+fpsVol);
+    }
+
     // check encoding FPS not too low
-    if (_switchForFPSAndBR && videoStats.sendFrameRate && videoStats.sendFrameRate > 0 && videoStats.sendFrameRate < (profile.frameRate * MinFPSPercent / 100)) {
+    if (_switchForFPSAndBR && videoStats.sendFrameRate && videoStats.sendFrameRate > 0 && (videoStats.sendFrameRate < (profile.frameRate * MinFPSPercent / 100) || _fpsVol>6.0 )) {
       _fpsLowObserved++;
     } else {
       _fpsLowObserved = 0;
@@ -121,14 +170,20 @@ var AgoraRTCUtils = (function () {
     if (_brLowObserved > ResultCountToStepDown) {
       changeProfile(_currentProfile - 1); // reduce profile
     }
-    else if (_fpsLowObserved > ResultCountToStepDown) {
+    else if (_fpsLowObserved > ResultCountToStepDownFPS) {
       _maxProfileDueToLowFPS = _currentProfile - 1; // do not return here
       changeProfile(_currentProfile - 1); // reduce profile
+    } else if ((Date.now()-_increaseResolutionAt<6000) && _fpsLowObserved == 0 && _brLowObserved == 0 && _currentProfile < _maxProfileDueToLowFPS ) { // somebody requested large
+      var desiredProfile=getProfileIndex("360p_11"); // increase if possible for someone to view now
+      if (_currentProfile<desiredProfile) {
+        changeProfile(desiredProfile); // increase if possible
+      }  
     } else if (_remoteVideoPublisherCount>0 &&  profile.maxRemoteUsers < _remoteVideoPublisherCount) {
-      changeProfile(_currentProfile - 1); // reduce profile
+      // jump all the way
+      changeProfile(_currentProfile - 1); // reduce profile          
     }  else if (_tempMaxProfile!=null && _currentProfile>_tempMaxProfile) {
       changeProfile(_tempMaxProfile); // reduce profile 
-    } else if (!_tempMaxProfile &&  profileUp && profileUp.maxRemoteUsers >= _remoteVideoPublisherCount ) { // after about 5 seconds of very good and can handle that many users
+    } else if (!_tempMaxProfile &&  profileUp && (profileUp.maxRemoteUsers >= _remoteVideoPublisherCount) ) { // after about 5 seconds of very good and can handle that many users
       if (_fpsLowObserved == 0 && _brLowObserved == 0 && _currentProfile < _maxProfileDueToLowFPS && (_brHighObserved > ResultCountToStepUp || !_switchForFPSAndBR) && _currentProfile < _profiles.length - 1) {
         changeProfile(_currentProfile + 1); // increase profile
       }
@@ -138,25 +193,31 @@ var AgoraRTCUtils = (function () {
       profile : profile.id,
       sendBitratekbps : sendBitratekbps,
       brLowObserved: _brLowObserved,
+      fpsVol: _fpsVol,
       fpsLowObserved: _fpsLowObserved,
       sendFrameRate : videoStats.sendFrameRate
     };
 
-    //AgoraRTCUtilEvents.emit("LocalVideoStatistics", _outboundVideoStats);
   }
 
   function changeProfile(profileInd) {
     if (profileInd < 0 || profileInd >= _profiles.length) {
       return;
     }
+
+
     _currentProfile = profileInd;
+    var profile = _profiles[profileInd];
+
+    _fpsLowObserved = 0;
+    console.log("Auto Adjust Changing Profile to " + profile.id+" _brLowObserved="+_brLowObserved+" _brHighObserved="+_brHighObserved+" _fpsLowObserved="+_fpsLowObserved); 
+
     _brLowObserved = 0;
     _brHighObserved = 0;
     _fpsLowObserved = 0;
-    var profile = _profiles[profileInd];
-    
+
+    _fpsRates = [];
     if (_publishClient && _publishClient._highStream && _publishClient._highStream.videoTrack) {
-      console.log("Auto Adjust Changing Profile to " + profile.id);
       _publishClient._highStream.videoTrack.setEncoderConfiguration({ width: profile.width, height: profile.height, frameRate: profile.frameRate, bitrateMin: profile.bitrateMin, bitrateMax: profile.bitrateMax });
     }
   }
@@ -285,10 +346,12 @@ var AgoraRTCUtils = (function () {
   // fireevent when all collected
 
   var MaxRenderRateSamples=16; // 4 seconds
+  
   var _monitorRemoteCallStatsInterval;
   var _userStatsMap={};
   var _clientStatsMap={};
-  
+  var _nackException=false;
+
   const RemoteStatusGood=0;
   const RemoteStatusFair=1;
   const RemoteStatusPoor=2;
@@ -299,15 +362,13 @@ var AgoraRTCUtils = (function () {
     RemoteStatusStart: 0,
     RemoteStatusDuration: 0,
   };
-
-
  
   function calculateRenderRateVolatility(statsMap){
 
     var arr= statsMap.renderRates;
 
     if (arr.length >= MaxRenderRateSamples) {
-      var removed = arr.shift();
+     arr.shift();
     }
     arr.push(statsMap.renderFrameRate);
 
@@ -352,15 +413,17 @@ var AgoraRTCUtils = (function () {
       TxSendBitratekbps :0,
       TxBrLowObserved: 0,
       TxFpsLowObserved: 0,
-      TxSendFrameRate : 0
+      TxSendFrameRate : 0,
+      LastUpdated : 0
     };
 
 
     for (var i = 0; i < _rtc_num_clients; i++) {
       var client = _rtc_clients[i];
-      if (!client._users.length) {
-        continue;
-      }
+
+     // if (!client._users.length) {
+     //   continue;
+     // }
 
       if (client._remoteStream) {
         for (var u = 0; u < client._users.length; u++) {
@@ -439,6 +502,12 @@ var AgoraRTCUtils = (function () {
               if ( _userStatsMap[uid].packetChange>0 &&  _userStatsMap[uid].totalDuration>5) // when people drop they remain for a while
               {
                 _clientStatsMap.SumRxRVol=_clientStatsMap.SumRxRVol+_userStatsMap[uid].renderRateStdDeviationPerc;
+
+                if (_userStatsMap[uid].renderRateStdDeviationPerc>10) {
+                  console.log(uid+" "+_userStatsMap[uid].renderRates.length+" "+_userStatsMap[uid].renderRateStdDeviationPerc+" "+_userStatsMap[uid].renderRates);
+//                  console.log(_userStatsMap[uid].renderRates);
+                }
+                
                 if (_userStatsMap[uid].nackRate>0 && !isNaN(_userStatsMap[uid].nackRate)) {
                   _clientStatsMap.SumRxNR=_clientStatsMap.SumRxNR+_userStatsMap[uid].nackRate;
                 }
@@ -482,21 +551,34 @@ var AgoraRTCUtils = (function () {
     // calculate aggregate user stats and aggregate channel (client) stats
 
     // don't report vvol on one user as gateway interferes on its own in 2 person call
-    if (_clientStatsMap.RemoteSubCount>1) {
+    //if (_clientStatsMap.RemoteSubCount>1) {
     _clientStatsMap.AvgRxRVol=_clientStatsMap.SumRxRVol/_clientStatsMap.RemoteSubCount;
     _clientStatsMap.AvgRxNR=_clientStatsMap.SumRxNR/_clientStatsMap.RemoteSubCount;
-    } else {
-      _clientStatsMap.AvgRxRVol=-1;
-      _clientStatsMap.AvgRxNR=-1;
-    }
+   // } else {
+   //   console.log(" _clientStatsMap.RemoteSubCount "+ _clientStatsMap.RemoteSubCount)
+   //   _clientStatsMap.AvgRxRVol=-1;
+   //   _clientStatsMap.AvgRxNR=-1;
+   // }
     
+   if ( !_clientStatsMap.TxSendResolutionWidth ) {
+     _fpsVol=-2;
+   }
 
     /// determine remote status, start and duration
     /// reset duration for good/critical/poor
     
-    if (_clientStatsMap.AvgRxRVol > 12 ||  _clientStatsMap.AvgRxNR > 12 ) {
+    // render rate vol can be expected after recent high AvgRxNR
+    // if nack rate goes high (critical)
+    // then we can be more leanient about RRVol until RRVol has come back down
+    if (_clientStatsMap.AvgRxRVol<6) {
+      _nackException=false;
+    }
+    var rrMultiplier=1;
+    if (_nackException) {
+      rrMultiplier=2;
+    }
+    if (_clientStatsMap.AvgRxRVol > (12*rrMultiplier) ||  _clientStatsMap.AvgRxNR > 12 ||  _fpsVol>12.0 ) {
       // critical or poor
-
       if (_clientStatsTrackMap.RemoteStatus!=RemoteStatusPoor) {
         _clientStatsTrackMap.RemoteStatus=RemoteStatusPoor;
         _clientStatsTrackMap.RemoteStatusStart=Date.now();        
@@ -504,15 +586,19 @@ var AgoraRTCUtils = (function () {
         _clientStatsTrackMap.RemoteStatusDuration=Date.now()-_clientStatsTrackMap.RemoteStatusStart;        
       }
 
-      if (_clientStatsMap.AvgRxRVol > 20 ||  _clientStatsMap.AvgRxNR > 30 ) {
+      if (_clientStatsMap.AvgRxRVol > (20*rrMultiplier) ||  _clientStatsMap.AvgRxNR > 30 ||  _fpsVol>25.0) {
+
+        if ( _clientStatsMap.AvgRxNR > 30 ) {
+          _nackException=true;
+        }
+        
         _clientStatsMap.RemoteStatusExtra=RemoteStatusCritical;
       } else {
         _clientStatsMap.RemoteStatusExtra=RemoteStatusPoor;
       }
     }  
 
-    else if (_clientStatsMap.AvgRxRVol > 7 ||  _clientStatsMap.AvgRxNR > 4 ) {
-      // critical 
+    else if (_clientStatsMap.AvgRxRVol > (6*rrMultiplier) ||  _clientStatsMap.AvgRxNR > 4 || _fpsVol>3.0) {
       if (_clientStatsTrackMap.RemoteStatus!=RemoteStatusFair ) {
         _clientStatsTrackMap.RemoteStatus=RemoteStatusFair;
         _clientStatsTrackMap.RemoteStatusStart=Date.now();        
@@ -533,9 +619,13 @@ var AgoraRTCUtils = (function () {
     _clientStatsMap.TxProfile=_outboundVideoStats.profile;
     _clientStatsMap.TxBrLowObserved=_outboundVideoStats.brLowObserved;
     _clientStatsMap.TxFpsLowObserved=_outboundVideoStats.fpsLowObserved;
+    _clientStatsMap.TxFpsVol=_outboundVideoStats.fpsVol;
+    
 
     _clientStatsMap.RemoteStatusDuration=Math.floor(_clientStatsTrackMap.RemoteStatusDuration/1000);
     _clientStatsMap.RemoteStatus= _clientStatsTrackMap.RemoteStatus;
+    _clientStatsMap.LastUpdated= Date.now();
+    
     
     //console.log(" setting RemoteStatus to "+_clientStatsTrackMap.RemoteStatus )
 
@@ -650,6 +740,11 @@ strategy
         _tempMaxProfile=null;
       }
     }, 
+    increaseResolution: function () {
+      _increaseResolutionAt=Date.now();
+     // console.warn(" _increaseResolutionAt "+_increaseResolutionAt);
+    }, 
+    
     setRemoteVideoPublisherCount: function (remoteVideoPublisherCount_) {
       _remoteVideoPublisherCount=remoteVideoPublisherCount_;
     },      

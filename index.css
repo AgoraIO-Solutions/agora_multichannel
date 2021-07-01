@@ -4,6 +4,7 @@
   background-color: #222 !important;
   overflow: hidden;
   }
+
   .focussed-video{
   ffbackground-color: #111;
   margin: auto;
@@ -26,14 +27,14 @@
 
   .fixed_stat{
     display: inline-block;
-    width: 90px;
+    width: 70px;
     text-align: left;
   }
 
   .fixed_stat_short{
     display: inline-block;
     text-align: left;
-    width: 20px;
+    width: 16px;
   }
 
   .stats_display_inner{
@@ -398,4 +399,21 @@
   #agoravideoplayer{
     width: 100%;
     border-radius: 10px;
+  }
+
+
+  .status_good{
+    color: #368b61;
+  }
+
+  .status_fair{
+    color: #6d7410;
+  }
+
+  .status_poor{
+    color: #865102;
+  }
+
+  .status_critical{
+    color: #5f0202;
   }

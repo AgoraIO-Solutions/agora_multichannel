@@ -41,7 +41,8 @@ class AgoraMultiChanelApp {
     this.FPS = "FPS";
     this.WATCH = "WATCH";
     this.WATCHYT = "WATCHYT";
-    this.STOP_SCREENSHARE="STOP_SCREENSHARE";
+    this.STOP_SCREENSHARE = "STOP_SCREENSHARE";
+    this.INCREASE_RESOLUTION = "INCREASE_RESOLUTION";
 
     this.VIDEO = "video";
     this.AUDIO = "audio";
@@ -49,23 +50,23 @@ class AgoraMultiChanelApp {
     this.AspectRatio = 16 / 9;
 
     // Page Parameters
-    this.appId = getParameterByName("appid") || "20b7c51ff4c644ab80cf5a4e646b0537";
+    this.appId = getParameterByName("appid") //|| "";
     this.baseChannelName = getParameterByName("channelBase") || "SA-MULTITEST";
     this.isMobile = getParameterByName("isMobile") || "false";
     this.maxVideoTiles = getParameterByNameAsInt("maxVideoTiles") || ((this.isMobile === "true" || isMobile()) ? 16 : 49);
     this.maxAudioSubscriptions = getParameterByNameAsInt("maxAudioSubscriptions") || 6;
     this.minVideoAllowedSubs = getParameterByNameAsInt("minVideoAllowedSubs") || 1;
     this.initialAudioAllowedSubs = getParameterByNameAsInt("initialAudioAllowedSubs") || 3;
-    this.initialVideoAllowedSubs = getParameterByNameAsInt("initialVideoAllowedSubs")  || ((this.isMobile === "true" || isMobile()) ? 4 : 16);
+    this.initialVideoAllowedSubs = getParameterByNameAsInt("initialVideoAllowedSubs") || ((this.isMobile === "true" || isMobile()) ? 1 : 16);
     this.minAudioAllowedSubs = getParameterByNameAsInt("minAudioAllowedSubs") || 3;
     this.intervalManageSubscriptions = getParameterByNameAsInt("intervalManageSubscriptions") || 150;
     this.numRenderExceedToIncrease = getParameterByNameAsInt("numRenderExceedToIncrease") || 2;
-    this.allowedVideoSubsIncreaseBy = getParameterByNameAsInt("allowedVideoSubsIncreaseBy") || 2;
+    this.allowedVideoSubsIncreaseBy = getParameterByNameAsInt("allowedVideoSubsIncreaseBy") || ((this.isMobile === "true" || isMobile()) ? 2 : 3);
     this.numRenderExceedToDecrease = getParameterByNameAsInt("numRenderExceedToDecrease") || -6;
-    this.allowedVideoSubsDecreaseBy = getParameterByNameAsInt("allowedVideoSubsDecreaseBy") || 1;
+    this.allowedVideoSubsDecreaseBy = getParameterByNameAsInt("allowedVideoSubsDecreaseBy")  || ((this.isMobile === "true" || isMobile()) ? 1 : 1);
     this.minRemoteStreamLife = getParameterByNameAsInt("minRemoteStreamLife") || 6 * 1000;
     // number of subscriptions before moving to low stream
-    this.switchVideoStreamTypeAt = getParameterByNameAsInt("switchVideoStreamTypeAt") || ((this.isMobile === "true" || isMobile()) ? 2 : 9);
+    this.switchVideoStreamTypeAt = getParameterByNameAsInt("switchVideoStreamTypeAt") || ((this.isMobile === "true" || isMobile()) ? 1 : 6);
 
     this.rampUpAgressive = getParameterByName("rampUpAgressive") || "false";
     this.dynamicallyAdjustLowStreamResolution = getParameterByName("dynamicallyAdjustLowStreamResolution") || "false";
@@ -79,9 +80,8 @@ class AgoraMultiChanelApp {
     this.enableRemoteCallStatsMonitor = getParameterByName("enableRemoteCallStatsMonitor") || "true";
     this.enableCallStatsToAdjustNumberOfSubscriptions = getParameterByName("enableCallStatsToAdjustNumberOfSubscriptions") || "false";
     this.forceRemoteUserStats = getParameterByName("forceRemoteUserStats") || "false";
-    
-    
-    
+    this.showMinStats = getParameterByName("showMinStats") || "false";
+
     this.superOptimise = getParameterByName("superOptimise") || "false";
     this.mobileShowHighQualityAtStart = getParameterByName("mobileShowHighQualityAtStart") || "true";
     this.enableDualStream = getParameterByName("enableDualStream") || "true";
@@ -89,6 +89,7 @@ class AgoraMultiChanelApp {
     this.enableHDAdjustiOS = getParameterByName("enableHDAdjustiOS") || "true";
 
     this.enableDualStreamMobile = getParameterByName("enableDualStreamMobile") || "false";
+    this.matchPriorityOrderToAudio  = getParameterByName("matchPriorityOrderToAudio") || "false";
 
     this.vcodec = getParameterByName("vcodec") || "vp8";
 
@@ -101,18 +102,20 @@ class AgoraMultiChanelApp {
     this.maxClients = 4;
     this.maxUsersPerChannel = 16;
     this.numVideoTiles = 0;
-    
+
     this.videoSubscriptions = {}; // maps to startTime and streamType and gets count often which is not efficient 
-    this.videoSubscriptionsCount=0; // faster to cache count of map
+    this.videoSubscriptionsCount = 0; // faster to cache count of map
     this.audioSubscriptions = {}; // maps to client but never used
-    this.audioSubscriptionsCount=0;
+    this.audioSubscriptionsCount = 0;
     this.videoPublishers = {}; // maps to client 
     this.audioPublishers = {};
-    this.videoPublishersCount=0;
+    this.videoPublishersCount = 0;
     this.userMap = {};
+    this.userRemoteStatsMap = {};
+
     this.fpsMap = {};
     this.allowedVideoSubs = this.initialVideoAllowedSubs;
-    console.log(" this.initialVideoAllowedSubs "+this.initialVideoAllowedSubs )
+    console.log(" this.initialVideoAllowedSubs " + this.initialVideoAllowedSubs)
     this.allowedAudioSubs = this.initialAudioAllowedSubs;
     this.numRenderExceed = 0;
     // first in list is more imporant person 
@@ -149,11 +152,13 @@ class AgoraMultiChanelApp {
 
     this.LowVideoStreamType = 1;
     this.HighVideoStreamType = 0;
+    this.defaultVideoStreamType = this.HighVideoStreamType;
+    this.bwLastIncreaseResolutionRequest = 0;
 
-    this.defaultVideoStreamType = this.HighVideoStreamType; //this.LowVideoStreamType;
-    //if (this.mobileShowHighQualityAtStart === "true" || !isMobile()) {
+    // this.LowVideoStreamType;
+    // if (this.mobileShowHighQualityAtStart === "true" || !isMobile()) {
     //  this.defaultVideoStreamType = this.HighVideoStreamType;
-   // }
+    // }
 
 
 
@@ -174,8 +179,8 @@ class AgoraMultiChanelApp {
     this.highVideoFPS = this.maxFPS; //isMobile() ? 15 : this.maxFPS;
     this.highVideoBitrateMin = 400;
     this.highVideoBitrateMax = 1000;
-    this.FPSThresholdToIncreaseSubs = 0.9;
-    this.FPSThresholdToReduceSubs = 0.5;
+    this.initialProfile="360p_11";
+
 
     // RTM
     this.rtmClient;
@@ -192,16 +197,18 @@ class AgoraMultiChanelApp {
     this.vadRecvWait = 3 * 1000;
 
     // Screenshare
-    this.maxScreenshareUID=100;
-    this.minScreenshareUID=10;
-    this.currScreenshareUID=10;
+    this.maxScreenshareUID = 100;
+    this.minScreenshareUID = 10;
+    this.currScreenshareUID = 10;
     this.screenClient;
 
     // Bandwidth Control
-    this.bwLastDecreaseTime=0;
-    this.bwLastDecreaseCount=0;
-    this.bwLastIncreaseTime=0;
-    this.bwLastIncreaseCount=0;
+    this.bwLastDecreaseTime = 0;
+    this.bwLastDecreaseCount = 0;
+    this.bwLastIncreaseTime = 0;
+    this.bwLastIncreaseCount = 0;
+    this.bwLastMainWindowIdIncreaseTime = 0;
+    this.bwLastIncreaseResolutionRequestEnabled = false;
 
     this.lowStreamResolutionSwitchWait = 10 * 1000;
     this.lowStreamResolutionSwitch = 0;
@@ -235,10 +242,10 @@ class AgoraMultiChanelApp {
     this.shownPersonToPerson = false;
     this.hostingWatchParty = false;
 
-    this.clientStats=null;
-    this.remoteStatusDurationCache=0;
-    this.remoteStatusCache=0;
-    this.RTCUtilsInitialised=false;
+    this.clientStats = null;
+    this.remoteStatusDurationCache = 0;
+    this.remoteStatusCache = 0;
+    this.RTCUtilsInitialised = false;
 
 
     // check an appid has been passed in
@@ -261,32 +268,32 @@ class AgoraMultiChanelApp {
       this.manageSubscriptions();
     }, this.intervalManageSubscriptions);
 
-    AgoraRTCUtils.setRTCClients(this.clients,this.numClients);
+    AgoraRTCUtils.setRTCClients(this.clients, this.numClients);
     AgoraRTCUtils.startInboundVolumeMonitor(150); // ms interval
-   
+
     if (this.enableRemoteCallStatsMonitor === "true") {
       AgoraRTCUtils.startRemoteCallStatsMonitor(500); // ms interval
-      AgoraRTCUtilEvents.on("RemoteUserVideoStatistics",agoraApp.processRemoteUserVideoStatistics);
-      AgoraRTCUtilEvents.on("ClientVideoStatistics",agoraApp.processAllClientVideoStatistics);
-    }    
-
-  }
-
-  async initRTCUtils() {
-
-    if (this.enableHDAdjust === "true" || (AgoraRTCUtils.isIOS() &&  this.enableHDAdjustiOS === "true")) {
-      AgoraRTCUtils.startAutoAdjustResolution(this.clients[this.myPublishClient], "360p_11", AgoraRTCUtils.isIOS());
+      AgoraRTCUtilEvents.on("RemoteUserVideoStatistics", agoraApp.processRemoteUserVideoStatistics);
+      AgoraRTCUtilEvents.on("ClientVideoStatistics", agoraApp.processAllClientVideoStatistics);
     }
-    
-    AgoraRTCUtils.startVoiceActivityDetection(this.localTracks.audioTrack);
-    AgoraRTCUtilEvents.on("VoiceActivityDetected",agoraApp.handleVADEvents);
-    this.RTCUtilsInitialised=true;
+
   }
-  
+
+  async initRTCUtils(profile) {
+
+    if (this.enableHDAdjust === "true" || (AgoraRTCUtils.isIOS() && this.enableHDAdjustiOS === "true")) {
+      AgoraRTCUtils.startAutoAdjustResolution(this.clients[this.myPublishClient], profile, AgoraRTCUtils.isIOS());
+    }
+
+    AgoraRTCUtils.startVoiceActivityDetection(this.localTracks.audioTrack);
+    AgoraRTCUtilEvents.on("VoiceActivityDetected", agoraApp.handleVADEvents);
+    this.RTCUtilsInitialised = true;
+  }
+
 
   processAllClientVideoStatistics(clientStats) {
 
-    agoraApp.clientStats=clientStats;
+    agoraApp.clientStats = clientStats;
 
     if (agoraApp.is_Mobile()) {
       agoraApp.displayClientVideoStatisticsMobile(clientStats);
@@ -296,90 +303,99 @@ class AgoraMultiChanelApp {
 
   }
 
-  displayClientVideoStatistics(clientStats){
+  displayClientVideoStatistics(clientStats) {
 
     var stats1 = "";
-    
-    //var agg= Math.sqrt(clientStats.SumRxAggRes);
-    var agg= clientStats.SumRxAggRes;
 
-    var stats1 = "Receive Stats - Users: " + clientStats.RemoteSubCount + 
-    " AggRes:" + agoraApp.fixStat((agg/720).toFixed(0) + "x" +"720");
+    var agg = clientStats.SumRxAggRes;
 
-    if ( clientStats.RemoteSubCount>0) {
-      stats1=stats1 + "RenderVolAvg:" + agoraApp.fixStat(clientStats.AvgRxRVol.toFixed(0),true) + 
-    "NackRateAvg:" + agoraApp.fixStat(clientStats.AvgRxNR.toFixed(0),true) +
-    "Status:" + agoraApp.getRemoteStatusDisplay(clientStats) +
-    " Duration:" + clientStats.RemoteStatusDuration +
-    " Bitrate (kbps):"+agoraApp.fixStat((clientStats.RecvBitrate/1000).toFixed(0)) ;
+    var stats1 = "Receive Stats - Users:" + clientStats.RemoteSubCount +
+      " AggRes:" + agoraApp.fixStat((agg / 720).toFixed(0) + "x" + "720");
+
+    if (clientStats.RemoteSubCount > 0) {
+      stats1 = stats1 + agoraApp.getRemoteStatusDisplay(clientStats, "RenderVolAvg:" + agoraApp.fixStat(clientStats.AvgRxRVol.toFixed(0), true) +
+        "NackRateAvg:" + agoraApp.fixStat(clientStats.AvgRxNR.toFixed(0), true)) +
+        " Duration(s):" + clientStats.RemoteStatusDuration +
+        " Bitrate(kbps):" + agoraApp.fixStat((clientStats.RecvBitrate / 1000).toFixed(0));
     }
 
-     var stats2 = "";
-     if (clientStats.TxSendResolutionWidth) {
-      stats2="Transmit Stats - Fps: " + agoraApp.fixStat(clientStats.TxSendFrameRate?.toFixed(0),true) +
-      "Profile "+clientStats.TxProfile+" "+
-      "Res:" + agoraApp.fixStat(clientStats.TxSendResolutionWidth + "x" +clientStats.TxSendResolutionHeight) +
-      "Bitrate (kbps):" +agoraApp.fixStat(clientStats.TxSendBitratekbps?.toFixed(0)) ;
-     }
+    var stats2 = "Audio Subs:" + agoraApp.audioSubscriptionsCount + "/" + agoraApp.audioPublishersByPriority.length + "/" + agoraApp.allowedAudioSubs + "/" + agoraApp.maxAudioSubscriptions + " Video Subs:" + agoraApp.videoSubscriptionsCount + "/" + agoraApp.videoPublishersByPriority.length + "/" + agoraApp.allowedVideoSubs + "/" + agoraApp.getMaxVideoTiles();
+    var stats3 = "";
 
-    var stats3 =  " Subs: Audio " + agoraApp.audioSubscriptionsCount + "sub/" + agoraApp.audioPublishersByPriority.length + "pub/" + agoraApp.maxAudioSubscriptions + "max | Video " + agoraApp.videoSubscriptionsCount + "sub/" + agoraApp.videoPublishersByPriority.length + "pub (" + agoraApp.allowedVideoSubs + "allow/" +  agoraApp.getMaxVideoTiles()  + "max)";
-    document.getElementById("renderFrameRate").innerHTML =  stats1+ "<br/>" + stats2+ "  " + stats3;
-  }
-  
-  getRemoteStatusDisplay(clientStats){
+    if (clientStats.TxSendResolutionWidth) {
+      stats3 = "Transmit Stats - Fps:" + agoraApp.fixStat(clientStats.TxSendFrameRate?.toFixed(0), true) +
+        "Profile:" + clientStats.TxProfile +
+        //" fpsVol:"+ agoraApp.fixStat(clientStats.TxFpsVol.toFixed(2))+
+        " Res:" + agoraApp.fixStat(clientStats.TxSendResolutionWidth + "x" + clientStats.TxSendResolutionHeight) +
+        " Bitrate(kbps):" + agoraApp.fixStat(clientStats.TxSendBitratekbps?.toFixed(0));
+    }
 
-     if (clientStats.RemoteStatus==AgoraRTCUtils.RemoteStatusGood) {
-       return "Good";
-     } else if (clientStats.RemoteStatus==AgoraRTCUtils.RemoteStatusFair) {
-       return "Fair";
-     } else if (clientStats.RemoteStatus==AgoraRTCUtils.RemoteStatusPoor) {
-
-       if (clientStats.RemoteStatusExtra==AgoraRTCUtils.RemoteStatusCritical) {
-        return "Crit";
-       } else {
-        return "Poor";
-       }
-     }
-
-     return "NA";
-
+    document.getElementById("renderFrameRate").innerHTML = stats1 + "<br/>" + stats2 + " " + stats3;
   }
 
   displayClientVideoStatisticsMobile(clientStats) {
 
-    var agg= clientStats.SumRxAggRes;
-    var stats1 =
+    if (agoraApp.showMinStats==="true") {
+      var stats="";
+      if (clientStats.RemoteSubCount > 0) {
+       stats= agoraApp.getRemoteStatusDisplay(clientStats, "RenderVolAvg:" + agoraApp.fixStat(clientStats.AvgRxRVol.toFixed(0), true) +
+      "NackRateAvg:" + agoraApp.fixStat(clientStats.AvgRxNR.toFixed(0), true));
+      } else {
 
-    "Rx - U: " + clientStats.RemoteSubCount + 
-    //" RxAggregate:" + (agg*(16/9)).toFixed(0) + "x" +(agg*(9/16)).toFixed(0) +
-    " AggRes:" + agoraApp.fixStat((agg/720).toFixed(0) + "x" +"720");
+      }
+      document.getElementById("renderFrameRate").innerHTML = stats;
 
-    if ( clientStats.RemoteSubCount>0) {
-      stats1=stats1 + "RVolAvg:" + agoraApp.fixStat(clientStats.AvgRxRVol.toFixed(0),true) + 
-    "NRAvg:" + agoraApp.fixStat(clientStats.AvgRxNR.toFixed(0),true) +
-    "St:" + agoraApp.getRemoteStatusDisplay(clientStats) +
-    " Dur:" + clientStats.RemoteStatusDuration +
-    " Br (k):"+agoraApp.fixStat((clientStats.RecvBitrate/1000).toFixed(0)) ;
-    }
+    } else {
+        var agg = clientStats.SumRxAggRes;
+        var stats1 =
+          "Rx - U: " + clientStats.RemoteSubCount +
+          " AggRes:" + agoraApp.fixStat((agg / 720).toFixed(0) + "x" + "720");
 
-     var stats2 = "";
+        if (clientStats.RemoteSubCount > 0) {
+          stats1 = stats1 + agoraApp.getRemoteStatusDisplay(clientStats, "RenderVolAvg:" + agoraApp.fixStat(clientStats.AvgRxRVol.toFixed(0), true) +
+            "NackRateAvg:" + agoraApp.fixStat(clientStats.AvgRxNR.toFixed(0), true)) +
+            " Dur(s):" + clientStats.RemoteStatusDuration +
+            " Br(k):" + agoraApp.fixStat((clientStats.RecvBitrate / 1000).toFixed(0));
+        }
 
-     if (clientStats.TxSendResolutionWidth) {
-      stats2="Tx - Fps: " + agoraApp.fixStat(clientStats.TxSendFrameRate?.toFixed(0),true) +
-      "Res:" + agoraApp.fixStat(clientStats.TxSendResolutionWidth + "x" +clientStats.TxSendResolutionHeight) +
-      "Br (k):" +agoraApp.fixStat(clientStats.TxSendBitratekbps?.toFixed(0)) ;
-     }
+
+        var stats2 = " Audio " + agoraApp.audioSubscriptionsCount + "/" + agoraApp.audioPublishersByPriority.length + "/" + agoraApp.maxAudioSubscriptions + "max | Video " + agoraApp.videoSubscriptionsCount + "/" + agoraApp.videoPublishersByPriority.length + "/" + agoraApp.allowedVideoSubs + "/" + agoraApp.getMaxVideoTiles();
+        var elapse= Math.ceil(( Date.now()- clientStats.LastUpdated)/1000);
+
+        stats2=stats2+" "+elapse;
         
-     var stats3 =  " Subs: Audio " + agoraApp.audioSubscriptionsCount + "sub/" + agoraApp.audioPublishersByPriority.length + "pub/" + agoraApp.maxAudioSubscriptions + "max | Video " + agoraApp.videoSubscriptionsCount + "sub/" + agoraApp.videoPublishersByPriority.length + "pub (" + agoraApp.allowedVideoSubs + "allow/" +  agoraApp.getMaxVideoTiles()  + "max)";
-  
-    document.getElementById("renderFrameRate").innerHTML =  stats1+ "<br/>" + stats2+stats3;
+        var stats3 = "";
+        if (clientStats.TxSendResolutionWidth) {
+          stats3 = "Tx - Fps: " + agoraApp.fixStat(clientStats.TxSendFrameRate?.toFixed(0), true) +
+            " fpsVol:"+agoraApp.fixStat(clientStats.TxFpsVol.toFixed(2))+
+            "Res:" + agoraApp.fixStat(clientStats.TxSendResolutionWidth + "x" + clientStats.TxSendResolutionHeight) +
+            "Br(k):" + agoraApp.fixStat(clientStats.TxSendBitratekbps?.toFixed(0));
+        }
+        //console.log(" "+stats1+" "+stats2+" "+stats3);
+        document.getElementById("renderFrameRate").innerHTML = stats1 + "<br/>" + stats2 + stats3;
+    }
   }
 
-  fixStat(inp,short){
-    if (short) {
-      return  " <span class='fixed_stat_short'>" + (inp) + "</span>  ";   
+  getRemoteStatusDisplay(clientStats, display) {
+    if (clientStats.RemoteStatus == AgoraRTCUtils.RemoteStatusGood) {
+      return "<span class='status_good'>" + display + "</span>";
+    } else if (clientStats.RemoteStatus == AgoraRTCUtils.RemoteStatusFair) {
+      return "<span class='status_fair'>" + display + "</span>";
+    } else if (clientStats.RemoteStatus == AgoraRTCUtils.RemoteStatusPoor) {
+      if (clientStats.RemoteStatusExtra == AgoraRTCUtils.RemoteStatusCritical) {
+        return "<span class='status_critical'>" + display + "</span>";
+      } else {
+        return "<span class='status_poor'>" + display + "</span>";
+      }
     }
-    return  " <span class='fixed_stat'>" + (inp) + "</span>  ";   
+    return "NA";
+  }
+
+  fixStat(inp, short) {
+    if (short) {
+      return " <span class='fixed_stat_short'>" + (inp) + "</span>  ";
+    }
+    return " <span class='fixed_stat'>" + (inp) + "</span>  ";
   }
 
   is_Mobile() {
@@ -388,58 +404,57 @@ class AgoraMultiChanelApp {
         return true;
       }
     } catch (e) { }
-  
+
     return AgoraRTCUtils.isMobile();
   }
 
   processRemoteUserVideoStatistics(userStats) {
 
-    var stats_display=document.getElementById(userStats.uid +"_stats_display");    
-    if (stats_display) {      
-      if (document.getElementById("stats_container").classList.contains("hidden") && agoraApp.forceRemoteUserStats === "false") {
+
+    agoraApp.userRemoteStatsMap[userStats.uid] = userStats;
+
+    var stats_display = document.getElementById(userStats.uid + "_stats_display");
+    var sobj = agoraApp.videoSubscriptions[userStats.uid];
+    if (stats_display) {
+      if (!sobj || (document.getElementById("stats_container").classList.contains("hidden") && agoraApp.forceRemoteUserStats === "false")) {
         stats_display.innerHTML = "";
       } else {
-        var stats_display_inner_low="stats_display_inner_low";
-        if (userStats.receiveResolutionHeight<100) {
-          if (!stats_display.classList.contains(stats_display_inner_low)) {
-            stats_display.classList.add(stats_display_inner_low);
-          }
-        } else {
-          if (stats_display.classList.contains(stats_display_inner_low)) {
-          stats_display.classList.remove(stats_display_inner_low);
-          }
-        }
-/*
-        var stats_display_small_font="stats_display_small_font";
-        if (!agoraApp.gridLayout || agoraApp.shareContentOnDisplay) {
-          if (!stats_display.classList.contains(stats_display_small_font)) {
-            stats_display.classList.add(stats_display_small_font);
-          }
-        } else {
-          if (stats_display.classList.contains(stats_display_small_font)) {
-          stats_display.classList.remove(stats_display_small_font);
-          }
-        }
-*/
+        var stats_display_inner_low = "stats_display_inner_low"; // s
 
-        
-        var sobj=agoraApp.videoSubscriptions[userStats.uid];
+        var sd = "na";
+
         if (!sobj) {
-          console.log(" no userStats.uid "+userStats.uid)
-        }
-        var streamType=agoraApp.videoSubscriptions[userStats.uid].streamType;
-        var sd="high";
-        if (streamType==1) {
-          sd="low";
+          console.log(" no userStats.uid " + userStats.uid)
         }
 
-        stats_display.innerHTML = "<span class='stats_display_inner'> "+         
-          " Res: "+          userStats.receiveResolutionWidth + "x" + userStats.receiveResolutionHeight + " ("+sd+") "+"<br/> "+
-          " Bitrate: "+          userStats.receiveBitrate +" <br/> "+
-          " Render FPS: "+          userStats.renderRateMean.toFixed(0)  +" <br/> "+
-          " Render Vol%: "+        userStats.renderRateStdDeviationPerc.toFixed(0)+" <br/> " +
-          " Nack Rate: "+          userStats.nackRate +" <br/> "+
-          " Duration: "+          userStats.totalDuration+" </span> ";
+        if (sobj) {
+          var streamType = agoraApp.videoSubscriptions[userStats.uid].streamType;
+
+          if (streamType == 1) {
+            if (!stats_display.classList.contains(stats_display_inner_low)) {
+              stats_display.classList.add(stats_display_inner_low);
+            }
+          } else {
+            if (stats_display.classList.contains(stats_display_inner_low)) {
+              stats_display.classList.remove(stats_display_inner_low);
+            }
+          }
+
+          sd = "high";
+          if (streamType == 1) {
+            sd = "low";
+          }
+        }
+
+
+
+        stats_display.innerHTML = "<span class='stats_display_inner'> " +
+          " Res: " + userStats.receiveResolutionWidth + "x" + userStats.receiveResolutionHeight + " (" + sd + ") " + "<br/> " +
+          " Bitrate: " + userStats.receiveBitrate + " <br/> " +
+          " Render FPS: " + userStats.renderRateMean.toFixed(0) + " <br/> " +
+          " Render Vol%: " + userStats.renderRateStdDeviationPerc.toFixed(0) + " <br/> " +
+          " Nack Rate: " + userStats.nackRate + " <br/> " +
+          " Duration: " + userStats.totalDuration + " </span> ";
       }
     }
   }
@@ -471,8 +486,9 @@ class AgoraMultiChanelApp {
       this.clients[i].on("user-published", async (user, mediaType) => {
         var uid_string = user.uid.toString();
         //console.error(" adding user "+uid_string);
-        this.userMap[uid_string] = user;        
-       
+        this.userMap[uid_string] = user;
+
+
 
         if (mediaType === this.VIDEO) {
           this.videoPublishers[uid_string] = currentClient;
@@ -483,27 +499,33 @@ class AgoraMultiChanelApp {
           // new publishers go on the end of the list in terms of page priority 
           // audio priority will influence video priority but remote users may not be publishing any audio
 
-          var index = this.audioPublishersByPriority.indexOf(uid_string);
-          if (index > -1) {
-            this.videoPublishersByPriority.splice(index, 0, uid_string);
-          } else {
-            // rather than push on the end
-            // insert them after audio count so they are not first to go
-            if (this.videoPublishersByPriority.length > this.audioPublishersByPriority.length) {
-              this.videoPublishersByPriority.splice(this.audioPublishersByPriority.length, 0, uid_string);
+          if (this.matchPriorityOrderToAudio==="true") {
+            var index = this.audioPublishersByPriority.indexOf(uid_string);
+            if (index > -1) {
+              this.videoPublishersByPriority.splice(index, 0, uid_string);
             } else {
-              this.videoPublishersByPriority.push(uid_string);
+              // rather than push on the end
+              // insert them after audio count so they are not first to go
+              if (this.videoPublishersByPriority.length > this.audioPublishersByPriority.length) {
+                this.videoPublishersByPriority.splice(this.audioPublishersByPriority.length, 0, uid_string);
+              } else {
+                this.videoPublishersByPriority.push(uid_string);
+              }
             }
+          } else {
+            this.videoPublishersByPriority.push(uid_string);
           }
 
-          this.videoSubscriptionsCount=this.getMapSize(this.videoSubscriptions);
-          this.videoPublishersCount=this.getMapSize(this.videoPublishers);
+          
+
+          this.videoSubscriptionsCount = this.getMapSize(this.videoSubscriptions);
+          this.videoPublishersCount = this.getMapSize(this.videoPublishers);
           AgoraRTCUtils.setRemoteVideoPublisherCount(this.videoPublishersCount);
         }
         else if (mediaType === this.AUDIO) {
           this.audioPublishers[uid_string] = currentClient;
           delete this.audioSubscriptions[uid_string];
-          this.audioSubscriptionsCount=this.getMapSize(this.audioSubscriptions);
+          this.audioSubscriptionsCount = this.getMapSize(this.audioSubscriptions);
           // check not  already in the priority array
           this.removeUidFromArray(this.audioPublishersByPriority, uid_string);
           // default order will be chronological but this will be rearranged using the VAD
@@ -514,19 +536,18 @@ class AgoraMultiChanelApp {
       // unpublished is called when users mute. Best not to remove them from UI completely
       this.clients[i].on("user-unpublished", async (user, mediaType) => {
         var uid_string = user.uid.toString();
-        console.warn("user-unpublished " + uid_string);
         if (mediaType === this.VIDEO) {
           delete this.videoPublishers[uid_string];
           delete this.videoSubscriptions[uid_string];
           this.removeUidFromArray(this.videoPublishersByPriority, uid_string);
-          this.videoSubscriptionsCount=this.getMapSize(this.videoSubscriptions);
-          this.videoPublishersCount=this.getMapSize(this.videoPublishers);
+          this.videoSubscriptionsCount = this.getMapSize(this.videoSubscriptions);
+          this.videoPublishersCount = this.getMapSize(this.videoPublishers);
           AgoraRTCUtils.setRemoteVideoPublisherCount(this.videoPublishersCount);
         }
         else if (mediaType === this.AUDIO) {
           delete this.audioPublishers[uid_string];
           delete this.audioSubscriptions[uid_string];
-          this.audioSubscriptionsCount=this.getMapSize(this.audioSubscriptions);
+          this.audioSubscriptionsCount = this.getMapSize(this.audioSubscriptions);
           this.removeUidFromArray(this.audioPublishersByPriority, uid_string);
         }
       });
@@ -537,16 +558,18 @@ class AgoraMultiChanelApp {
           delete this.videoSubscriptions[user.uid.toString()];
           delete this.audioPublishers[user.uid.toString()];
           delete this.audioSubscriptions[user.uid.toString()];
+          delete this.userMap[user.uid.toString()];
+          delete this.userRemoteStatsMap[user.uid.toString()];
           this.removeUidFromArray(this.usersConnected, user.uid.toString());
           this.removeUidFromArray(this.audioPublishersByPriority, user.uid.toString());
           this.removeUidFromArray(this.videoPublishersByPriority, user.uid.toString());
-          this.videoSubscriptionsCount=this.getMapSize(this.videoSubscriptions);
-          this.videoPublishersCount=this.getMapSize(this.videoPublishers);
-          this.audioSubscriptionsCount=this.getMapSize(this.audioSubscriptions);
+          this.videoSubscriptionsCount = this.getMapSize(this.videoSubscriptions);
+          this.videoPublishersCount = this.getMapSize(this.videoPublishers);
+          this.audioSubscriptionsCount = this.getMapSize(this.audioSubscriptions);
           AgoraRTCUtils.setRemoteVideoPublisherCount(this.videoPublishersCount);
         });
 
-        this.clients[i].on("user-joined",
+      this.clients[i].on("user-joined",
         async (user) => {
           var uid_string = user.uid.toString();
           this.usersConnected.push(uid_string);
@@ -562,47 +585,37 @@ class AgoraMultiChanelApp {
     return this.maxVideoTiles;
   }
 
-  /*
-
-  doSwitchRxVideoStreamTypeAt() {
-    var subs = this.getMapSize(this.videoSubscriptions);
-    if (subs > this.switchVideoStreamTypeAt && this.defaultVideoStreamType == this.HighVideoStreamType) {
+  doSwitchRxVideoStreamTypeAt2() {
+    if (this.videoSubscriptionsCoun >= this.switchVideoStreamTypeAt && this.defaultVideoStreamType == this.HighVideoStreamType) {
       this.defaultVideoStreamType = this.LowVideoStreamType;
-      this.changeAllVideoStreamTypes(this.defaultVideoStreamType);
-    } else if (subs < this.switchVideoStreamTypeAt && this.defaultVideoStreamType != this.HighVideoStreamType) {
+    } else if (this.videoSubscriptionsCoun < this.switchVideoStreamTypeAt && this.defaultVideoStreamType != this.HighVideoStreamType) {
       this.defaultVideoStreamType = this.HighVideoStreamType;
-      this.changeAllVideoStreamTypes(this.defaultVideoStreamType);
     }
   }
 
-  */
-
-  changeAllVideoStreamTypes(streamType,force,batch) {
+  changeAllVideoStreamTypes(streamType, force, batch) {
     var that = this;
-    var count=0;
-    //Object.keys(this.videoSubscriptions).forEach( function (key) {
-      for (var v = this.orderedVideoSubs.length-1; v >=0 ; v--) {
-        var key=this.orderedVideoSubs[v];
-        var user = that.userMap[key];
-        var client = that.videoPublishers[key];
-       // console.log( " changeAllVideoStreamTypes "+key+" "+that.videoSubscriptions[key]);
+    var count = 0;
+    for (var v = this.orderedVideoSubs.length - 1; v >= 0; v--) {
+      var key = this.orderedVideoSubs[v];
+      var user = that.userMap[key];
+      var client = that.videoPublishers[key];
 
-        if (that.videoSubscriptions[key] && (that.videoSubscriptions[key].streamType!=streamType || force) && that.mainVideoId !== key && (batch==0 || batch > count) ) {
-          client.setRemoteVideoStreamType(user.uid, streamType);
-          that.videoSubscriptions[key].streamType=streamType;
-          count++;
-        }
+      if (that.videoSubscriptions[key] && (that.videoSubscriptions[key].streamType != streamType || force) && (that.mainVideoId !== key || streamType == that.HighVideoStreamType || that.videoSubscriptionsCount<=1) && (batch == 0 || batch > count)) {
+        client.setRemoteVideoStreamType(user.uid, streamType);
+        that.videoSubscriptions[key].streamType = streamType;
+        count++;
+      }
     }
-    //});
     return count;
   }
 
   changeVideoStreamType(uid_string, streamType) {
     var user = this.userMap[uid_string];
     var client = this.videoPublishers[uid_string];
-    if (this.videoSubscriptions[uid_string].streamType!=streamType) {
+    if (this.videoSubscriptions[uid_string].streamType != streamType) {
       client.setRemoteVideoStreamType(user.uid, streamType);
-      this.videoSubscriptions[uid_string].streamType=streamType;
+      this.videoSubscriptions[uid_string].streamType = streamType;
       return true;
     }
     return false;
@@ -618,7 +631,7 @@ class AgoraMultiChanelApp {
     // new method 
     if (this.enableRemoteCallStatsMonitor === "true") {
       this.manageRampUpAndDown();
-    }    
+    }
 
     // if share content - show low streams
 
@@ -635,8 +648,8 @@ class AgoraMultiChanelApp {
 
     this.manageGrid();
   }
- 
-  manageRampUpAndDown(){
+
+  manageRampUpAndDown() {
 
     // State Machine
     /*
@@ -673,134 +686,165 @@ class AgoraMultiChanelApp {
 
 
     */
-    if (!this.clientStats){
+    if (!this.clientStats) {
       return;
     }
 
-
-    if (this.clientStats.RemoteStatus!=this.remoteStatusCache){
+    if (this.clientStats.RemoteStatus != this.remoteStatusCache) {
       // new status
       // start the clock and cache
-      this.remoteStatusCache=this.clientStats.RemoteStatus;
+      this.remoteStatusCache = this.clientStats.RemoteStatus;
       if (!isNaN(this.clientStats.RemoteStatusDuration)) {
-        this.remoteStatusDurationCache=this.clientStats.RemoteStatusDuration;
+        this.remoteStatusDurationCache = this.clientStats.RemoteStatusDuration;
       }
       return; // no need to do anything until there is a consistent trend 
     }
-    
 
-    var currentStatusDuration=this.clientStats.RemoteStatusDuration-this.remoteStatusDurationCache;
-    if (currentStatusDuration>=0 && currentStatusDuration<3){
+    var currentStatusDuration = this.clientStats.RemoteStatusDuration - this.remoteStatusDurationCache;
+    if (currentStatusDuration >= 0 && currentStatusDuration < 3) {
       return; // wait for 3 seconds in new state before acting 
     }
     // resets duration cache
-    this.remoteStatusDurationCache=this.clientStats.RemoteStatusDuration;
+    this.remoteStatusDurationCache = this.clientStats.RemoteStatusDuration;
 
-    console.log("manageRampUpAndDown RemoteStatus "+this.clientStats.RemoteStatus+"  shareContentOnDisplay "+this.shareContentOnDisplay+" currentStatusDuration="+currentStatusDuration+"  MinRemoteDuration "+ this.clientStats.MinRemoteDuration+" RTCUtilsInitialised "+this.RTCUtilsInitialised )
+    var elapse= Math.ceil(( Date.now()- this.clientStats.LastUpdated)/1000);
+    console.log("manageRampUpAndDown RemoteStatus " + this.clientStats.RemoteStatus + "." + this.clientStats.RemoteStatusExtra + " shareContentOnDisplay " + this.shareContentOnDisplay + " currentStatusDuration=" + currentStatusDuration + "  MinRemoteDuration " + this.clientStats.MinRemoteDuration + " RTCUtilsInitialised " + this.RTCUtilsInitialised+" elapse="+elapse)
 
-    if (this.clientStats.RemoteStatus==AgoraRTCUtils.RemoteStatusPoor)
-    {
-
+    if (this.clientStats.RemoteStatus == AgoraRTCUtils.RemoteStatusPoor) {
       // batch size 
-      this.bwLastDecreaseTime=Date.now();
-      var batch=Math.ceil(this.clientStats.RemoteSubCount/5); // 20% drop 
-
-      if (this.clientStats.RemoteStatusExtra==AgoraRTCUtils.RemoteStatusCritical) {
-       batch=Math.ceil(this.clientStats.RemoteSubCount/3); // larger 33% if critical
+      this.bwLastDecreaseTime = Date.now();
+      var batch = Math.ceil(this.clientStats.RemoteSubCount / 5); // 20% drop 
+      if (this.clientStats.RemoteStatusExtra == AgoraRTCUtils.RemoteStatusCritical) {
+        batch = Math.ceil(this.clientStats.RemoteSubCount / 3); // larger 33% if critical
       }
 
       // if we have increased recently then decrease slowly
-      if (this.bwLastDecreaseTime-this.bwLastIncreaseTime < 15000 && this.bwLastIncreaseCount>0) { // within 15 seconds since climb
-        batch=this.bwLastIncreaseCount;
-        this.bwLastIncreaseCount=0;
+      if (this.bwLastDecreaseTime - this.bwLastIncreaseTime < 15000 && this.bwLastIncreaseCount > 0) { // within 15 seconds since climb
+        batch = this.bwLastIncreaseCount;
+        this.bwLastIncreaseCount = 0;
       }
 
-      var count=this.changeAllVideoStreamTypes(this.LowVideoStreamType,false,batch);        
-      console.log(" count DOWN batch="+batch+" count="+count+" RemoteStatusExtra "+this.clientStats.RemoteStatusExtra);
-      
-        // reduce VIDEO allowed subs
-      if (count==0) {
-        if (this.allowedVideoSubs - this.allowedVideoSubsDecreaseBy >= this.minVideoAllowedSubs) {
-          this.allowedVideoSubs = this.allowedVideoSubs - this.allowedVideoSubsDecreaseBy;
-        } else if (this.allowedVideoSubs > this.minVideoAllowedSubs) {
-          this.allowedVideoSubs--;
+      var count = this.changeAllVideoStreamTypes(this.LowVideoStreamType, false, batch);
+      var reduceVideoSubsBy = 0;
+
+      // reduce VIDEO allowed subs
+      if (count == 0) {
+        if (batch>this.allowedVideoSubsDecreaseBy) {
+          batch=this.allowedVideoSubsDecreaseBy;
         }
+
+        if (this.allowedVideoSubs - batch >= this.minVideoAllowedSubs) {
+          this.allowedVideoSubs = this.allowedVideoSubs - batch;
+          reduceVideoSubsBy = batch;
+        } else if (this.allowedVideoSubs > this.minVideoAllowedSubs) {
+          reduceVideoSubsBy = this.allowedVideoSubs - this.minVideoAllowedSubs;
+          this.allowedVideoSubs = this.minVideoAllowedSubs;
+        }
+
+
         // reduce AUDIO allowed subs
         if (this.allowedAudioSubs > this.minAudioAllowedSubs) {
           this.allowedAudioSubs--;
         }
+        this.bwLastDecreaseCount = reduceVideoSubsBy;
+      } else {
+        this.bwLastDecreaseCount = count;
       }
-      this.bwLastDecreaseCount=count;
+      console.log("Move Down: batch=" + batch + " moveLow=" + count + " reduceSubs=" + reduceVideoSubsBy + "  videoSubCount=" + this.videoSubscriptionsCount + " RemoteSubCount=" + this.clientStats.RemoteSubCount);
+    } else if (this.clientStats.RemoteStatus == AgoraRTCUtils.RemoteStatusGood && this.RTCUtilsInitialised && this.clientStats.MinRemoteDuration > 3)// && !this.shareContentOnDisplay)
+    {
 
-    } else if (this.clientStats.RemoteStatus==AgoraRTCUtils.RemoteStatusGood && this.RTCUtilsInitialised &&  this.clientStats.MinRemoteDuration > 3 )// && !this.shareContentOnDisplay)
-    { 
       // RTCUtilsInitialised is checked to ensure we don't ramp up until the camera is enabled.
       // show more remote subs before going high quality
+      this.bwLastIncreaseTime = Date.now();
+      var slowRamp = false;
+      var noRamp = false;
+      var count = 0;
 
-      this.bwLastIncreaseTime=Date.now();
-      var slowRamp=false;
-      var noRamp=false;
-      var count=0;
-
-      if (this.bwLastIncreaseTime-this.bwLastDecreaseTime < 6000) { // any problems in last 6 seconds
-        noRamp=true;
+      if (this.bwLastIncreaseTime - this.bwLastDecreaseTime < 6000) { // any problems in last 6 seconds
+        noRamp = true;
       }
-      else if (this.bwLastIncreaseTime-this.bwLastDecreaseTime < 20000) { // if any problems in last 20 seconds?
-        slowRamp=true;
+      else if (this.bwLastIncreaseTime - this.bwLastDecreaseTime < 20000) { // if any problems in last 20 seconds?
+        slowRamp = true;
       }
 
+      // first video add subs if some missing
       if (!noRamp && !slowRamp && this.allowedVideoSubs <= (this.getMaxVideoTiles() - this.allowedVideoSubsIncreaseBy) && this.allowedVideoSubs <= (this.videoPublishersCount - this.allowedVideoSubsIncreaseBy) && this.allowedVideoSubs < (this.videoSubscriptionsCount + this.allowedVideoSubsIncreaseBy)) {
         this.allowedVideoSubs = this.allowedVideoSubs + this.allowedVideoSubsIncreaseBy;
-        count= this.allowedVideoSubsIncreaseBy;
+        count = this.allowedVideoSubsIncreaseBy;
       } else if (!noRamp && this.allowedVideoSubs <= (this.getMaxVideoTiles() - 1) && this.allowedVideoSubs <= (this.videoPublishersCount - 1) && this.allowedVideoSubs < (this.videoSubscriptionsCount + 1)) {
         this.allowedVideoSubs = this.allowedVideoSubs + 1;
         count++;
       }
       // increase AUDIO allow subs
-      if (!noRamp && this.allowedAudioSubs < this.maxAudioSubscriptions && this.allowedAudioSubs < (this.getMapSize(this.audioSubscriptions) + 1)) {
+      if (!noRamp && this.allowedAudioSubs < this.maxAudioSubscriptions && this.allowedAudioSubs < (this.audioSubscriptionsCount + 1)) {
         count++;
+        this.allowedAudioSubs = this.audioSubscriptionsCount + 1;
       }
 
-      // increase VIDEO allow subs
-      if (!noRamp && count==0 && !(this.shareContentOnDisplay && this.clientStats.RemoteSubCount>7 )) {
-        var batch=Math.ceil(this.clientStats.RemoteSubCount/4); // 25% increase
+      // increase video quality
+      if (!noRamp && count == 0 && !(this.shareContentOnDisplay && this.clientStats.RemoteSubCount > 7)) {
+        var batch = Math.ceil(this.clientStats.RemoteSubCount / 4); // 25% increase
         if (slowRamp) { // flip flop
-          batch=1;
+          batch = 1;
         }
-        var count=this.changeAllVideoStreamTypes(this.HighVideoStreamType, false, batch);            
-        console.log(" count UP batch="+batch+" count="+count); 
-     } else {
-        console.log(" count UP subs count="+count); 
-     }
+        var count = this.changeAllVideoStreamTypes(this.HighVideoStreamType, false, batch);
 
-      this.bwLastIncreaseCount=count;
+        console.log("Move Up: batch=" + batch + " moveHigh=" + count + " increaseSubs=0 videoSubCount=" + this.videoSubscriptionsCount + " RemoteSubCount=" + this.clientStats.RemoteSubCount);
 
+      } else {
+        console.log("Move Up: batch=0 moveHigh=0 increaseSubs=" + count + " videoSubCount=" + this.videoSubscriptionsCount + " RemoteSubCount=" + this.clientStats.RemoteSubCount);
+      }
+
+
+      this.bwLastIncreaseCount = count;
+
+      // if status is good and we have someone in main window at low res and not sent message to him for a while 
+      // send a request to increase every 3s
+      // he will stay higher res for 6s
+      if (this.mainVideoId) { // send every 3 seconds    
+        if (this.videoSubscriptions[this.mainVideoId] && this.videoSubscriptions[this.mainVideoId].streamType == this.LowVideoStreamType) {
+          // move to high
+          this.changeVideoStreamType(this.mainVideoId, this.HighVideoStreamType);
+        }
+        else {
+          // if height> > 360 then send him a PM
+          if (this.userRemoteStatsMap[this.mainVideoId] && (parseInt(this.userRemoteStatsMap[this.mainVideoId].receiveResolutionHeight, 10) < 360 || this.bwLastIncreaseResolutionRequestEnabled)) {
+            if (Date.now() - this.bwLastIncreaseResolutionRequest > 3000) {
+              this.bwLastIncreaseResolutionRequestEnabled = true;
+              this.bwLastIncreaseResolutionRequest = Date.now();
+              this.peerMessage(this.INCREASE_RESOLUTION, this.mainVideoId);
+              console.warn("requesting INCREASE_RESOLUTION");
+            }
+          }
+        }
+        this.bwLastMainWindowIdIncreaseTime = this.bwLastIncreaseTime;
+      }
     }
-
 
 
     // reduce encoding resolutions in share mode
-    if (this.shareContentOnDisplay ) {
-        AgoraRTCUtils.setTempMaxProfile("180p");
+    if (this.shareContentOnDisplay) {
+      AgoraRTCUtils.setTempMaxProfile("180p");
       if (this.clientStats.RemoteSubCount > 7)  // max tiles below content area
-        {
-          // subscribe to low stream
-         this.changeAllVideoStreamTypes(this.LowVideoStreamType,false,0);   
-        }
+      {
+        // subscribe to low stream
+        this.changeAllVideoStreamTypes(this.LowVideoStreamType, false, 0);
+      }
     }
     else if (this.clientStats.RemoteSubCount > 16) // max 180p for keeping under 720p
     {
-      // subscribe to low stream
-      this.changeAllVideoStreamTypes(this.LowVideoStreamType,false,0);   
+      // if more than 16 then drop to low stream (160x90) to keep below 720p
+      // but dont subscribe to low of main window id
+      this.changeAllVideoStreamTypes(this.LowVideoStreamType, false, 0);
     }
-
 
 
   }
 
 
 
-  manageGrid() {
+  async manageGrid() {
     var now = Date.now();
     if ((now - this.manageGridLast) < this.ManageGridWait) {
       return;
@@ -822,7 +866,7 @@ class AgoraMultiChanelApp {
 
     // video slots
     var expectedVideoSlots = {};
-    var expectedVideoSlotCount=0;
+    var expectedVideoSlotCount = 0;
     for (var v = 0; v < numVideoSlots; v++) {
       // any slots not present add
       this.addVideoSlotIfNotExisting(this.videoPublishersByPriority[v]);
@@ -832,11 +876,11 @@ class AgoraMultiChanelApp {
     }
 
     // have grid cells if room for non publishers
-    if (this.getMaxVideoTiles() > this.videoPublishersByPriority.length && this.usersConnected.length > this.videoPublishersByPriority.length ){
-      var that=this;
+    if (this.getMaxVideoTiles() > this.videoPublishersByPriority.length && this.usersConnected.length > this.videoPublishersByPriority.length) {
+      var that = this;
       for (var v = 0; v < this.usersConnected.length; v++) {
-        var key=this.usersConnected[v];
-        if (!expectedVideoSlots[key] &&  expectedVideoSlotCount<that.getMaxVideoTiles()  ) {
+        var key = this.usersConnected[v];
+        if (!expectedVideoSlots[key] && expectedVideoSlotCount < that.getMaxVideoTiles()) {
           that.addVideoSlotIfNotExisting(key);
           // remove any slots present which should not be  
           expectedVideoSlots[key] = key;
@@ -844,7 +888,7 @@ class AgoraMultiChanelApp {
         }
       }
     }
-    
+
 
     this.removeSlotsIfNotInMap(expectedVideoSlots);
 
@@ -859,8 +903,8 @@ class AgoraMultiChanelApp {
       lorderedVideoSubs.push(this.videoPublishersByPriority[v]);
     }
 
-    this.orderedVideoSubs=lorderedVideoSubs;
-  
+    this.orderedVideoSubs = lorderedVideoSubs;
+
     this.removeVideoSubsIfNotInMap(expectedVideoSubs);
 
     // ** Audio ** 
@@ -896,7 +940,7 @@ class AgoraMultiChanelApp {
         var client = that.audioPublishers[key];
         var prom = await client.unsubscribe(user, that.AUDIO);
         delete that.audioSubscriptions[key];
-        that.audioSubscriptionsCount=that.getMapSize(that.audioSubscriptions);
+        that.audioSubscriptionsCount = that.getMapSize(that.audioSubscriptions);
       }
     });
   }
@@ -908,16 +952,16 @@ class AgoraMultiChanelApp {
     var user = this.userMap[uid_string];
     var client = this.audioPublishers[uid_string];
     this.audioSubscriptions[uid_string] = client;
-    this.audioSubscriptionsCount=this.getMapSize(this.audioSubscriptions);
+    this.audioSubscriptionsCount = this.getMapSize(this.audioSubscriptions);
     var that = this;
     if (this.performSubscriptions === "true") {
-        await client.subscribe(user, this.AUDIO).then(response => {
-          user.audioTrack.play();
-        }).catch(e => {
-          delete that.audioSubscriptions[uid_string];
-          that.audioSubscriptionsCount=that.getMapSize(that.audioSubscriptions);
-          console.error(e);
-        });
+      await client.subscribe(user, this.AUDIO).then(response => {
+        user.audioTrack.play();
+      }).catch(e => {
+        delete that.audioSubscriptions[uid_string];
+        that.audioSubscriptionsCount = that.getMapSize(that.audioSubscriptions);
+        console.error(e);
+      });
     }
   }
 
@@ -932,13 +976,18 @@ class AgoraMultiChanelApp {
           var client = that.videoPublishers[key];
           var prom = await client.unsubscribe(user, that.VIDEO);
           delete that.videoSubscriptions[key];
-          that.videoSubscriptionsCount=that.getMapSize(that.videoSubscriptions);
+          that.videoSubscriptionsCount = that.getMapSize(that.videoSubscriptions);
+          // remove user stats
+          var stats_display = document.getElementById(key + "_stats_display");
+          if (stats_display) {
+            stats_display.innerHTML = "" ;
+          }
         }
       }
     });
   }
 
-  async addVideoSubIfNotExisting(uid_string) {
+  addVideoSubIfNotExisting(uid_string) {
     if (this.videoSubscriptions[uid_string]) {
       return;
     }
@@ -949,16 +998,17 @@ class AgoraMultiChanelApp {
     var client = this.videoPublishers[uid_string];
 
     this.videoSubscriptions[uid_string] = {
-                                        startTime :  Date.now(),
-                                        streamType : this.defaultVideoStreamType,
-                                        };
+      startTime: -1,
+      streamType: this.defaultVideoStreamType,
+    };
 
-    this.videoSubscriptionsCount=this.getMapSize(this.videoSubscriptions);
-    
+    this.videoSubscriptionsCount = this.getMapSize(this.videoSubscriptions);
+    this.doSwitchRxVideoStreamTypeAt2();
+
     // now client; 
     var that = this;
     if (this.performSubscriptions === "true") {
-      await client.subscribe(user, this.VIDEO).then(response => {
+      client.subscribe(user, this.VIDEO).then(response => {
 
         user.videoTrack.play(uid_string);
         that.removeAgoraInnerVideoStyling();
@@ -966,14 +1016,15 @@ class AgoraMultiChanelApp {
         // 1 is for low quality
         //client.setStreamFallbackOption(user.uid, 1); // Automatically subscribe to the low-quality video stream under poor network.
         client.setStreamFallbackOption(user.uid, 0); //disable fall back
-        client.setRemoteVideoStreamType(user.uid, that.defaultVideoStreamType );
-        
+        client.setRemoteVideoStreamType(user.uid, that.videoSubscriptions[uid_string].streamType);
+        that.videoSubscriptions[uid_string].startTime = Date.now();
         // handleScreenshareSub
         that.handleScreenshareSub(uid_string);
 
       }).catch(e => {
         delete that.videoSubscriptions[uid_string];
-        that.videoSubscriptionsCount=that.getMapSize(that.videoSubscriptions);
+        that.videoSubscriptionsCount = that.getMapSize(that.videoSubscriptions);
+
         console.error(e);
       });
     }
@@ -983,50 +1034,50 @@ class AgoraMultiChanelApp {
     var els = document.getElementsByClassName("remote_video");
     var that = this;
     Array.prototype.forEach.call(els, function (el) {
-        var children = el.childNodes;
-        children.forEach(function(item){
-          if (!item.className.match(/\bremove_agora_video_style\b/)){
-            item.classList.add("remove_agora_video_style");
-          }
-         
-        });
-      });
-
-    // remove tile if in follow speaker area
-    els = document.getElementsByClassName("focussed-video-inner");
-    Array.prototype.forEach.call(els, function (el) {        
       var children = el.childNodes;
-      children.forEach(function(item){
-        if (!item.className.match(/\bremove_agora_video_style\b/)){
+      children.forEach(function (item) {
+        if (!item.className.match(/\bremove_agora_video_style\b/)) {
           item.classList.add("remove_agora_video_style");
         }
-       
+
       });
     });
 
-      // remove tile if in follow speaker area
-      els = document.getElementsByClassName("local_video");
-      Array.prototype.forEach.call(els, function (el) {        
-        var children = el.childNodes;
-        children.forEach(function(item){
-          if (!item.className.match(/\bremove_agora_video_style\b/)){
-            item.classList.add("remove_agora_video_style");
-          }
-          
-        });
-      });
+    // remove tile if in follow speaker area
+    els = document.getElementsByClassName("focussed-video-inner");
+    Array.prototype.forEach.call(els, function (el) {
+      var children = el.childNodes;
+      children.forEach(function (item) {
+        if (!item.className.match(/\bremove_agora_video_style\b/)) {
+          item.classList.add("remove_agora_video_style");
+        }
 
-      // remove tile if in follow speaker area
-      els = document.getElementsByClassName("player");
-      Array.prototype.forEach.call(els, function (el) {        
-        var children = el.childNodes;
-        children.forEach(function(item){
-          if (!item.className.match(/\bremove_agora_video_style\b/)){
-            item.classList.add("remove_agora_video_style");
-          }
-          
-        });
       });
+    });
+
+    // remove tile if in follow speaker area
+    els = document.getElementsByClassName("local_video");
+    Array.prototype.forEach.call(els, function (el) {
+      var children = el.childNodes;
+      children.forEach(function (item) {
+        if (!item.className.match(/\bremove_agora_video_style\b/)) {
+          item.classList.add("remove_agora_video_style");
+        }
+
+      });
+    });
+
+    // remove tile if in follow speaker area
+    els = document.getElementsByClassName("player");
+    Array.prototype.forEach.call(els, function (el) {
+      var children = el.childNodes;
+      children.forEach(function (item) {
+        if (!item.className.match(/\bremove_agora_video_style\b/)) {
+          item.classList.add("remove_agora_video_style");
+        }
+
+      });
+    });
   }
 
   removeSlotsIfNotInMap(expected) {
@@ -1046,7 +1097,8 @@ class AgoraMultiChanelApp {
         that.numVideoTiles--;
         el.remove();
         // someone or thing in big window has dropped
-        that.mainVideoId=null;
+        that.mainVideoId = null;
+        that.bwLastIncreaseResolutionRequestEnabled = false;
         that.disableShareContent();
       }
     });
@@ -1056,12 +1108,12 @@ class AgoraMultiChanelApp {
     if (!document.getElementById(uid_string)) {
       const playerDomDiv = document.createElement("div");
       playerDomDiv.id = uid_string;
-      var setClass= "remote_video";
+      var setClass = "remote_video";
       if (isMobile())
-        setClass= "remote_video remote_video_mobile";
+        setClass = "remote_video remote_video_mobile";
 
-      playerDomDiv.className =setClass;
-      
+      playerDomDiv.className = setClass;
+
       // click to expand and subscribe to high quality
       var that = this;
       playerDomDiv.onclick = function () {
@@ -1101,10 +1153,10 @@ class AgoraMultiChanelApp {
       };
 
       const stats_display = document.createElement("div");
-      stats_display.className ="stats_display";   
-      stats_display.id = uid_string+"_stats_display";
+      stats_display.className = "stats_display";
+      stats_display.id = uid_string + "_stats_display";
       playerDomDiv.append(stats_display);
-      
+
       document.getElementById("grid").append(playerDomDiv);
       this.numVideoTiles++;
     }
@@ -1124,19 +1176,19 @@ class AgoraMultiChanelApp {
 
   toggleLayout(loadActiveSpeaker) {
     if (this.gridLayout) {
-      if (this.videoPublishersByPriority.length > 0 || this.shareContentOnDisplay || this.usersConnected.length >0  ) {
+      if (this.videoPublishersByPriority.length > 0 || this.shareContentOnDisplay || this.usersConnected.length > 0) {
         this.gridLayout = false;
         document.getElementById("focus-video").classList.remove("hidden");
         document.getElementById("grid").classList.add("grid_wrapper_follow");
         if (loadActiveSpeaker) {
-          if (this.videoPublishersByPriority.length > 0 ) {
+          if (this.videoPublishersByPriority.length > 0) {
             this.moveToLargeWindow(this.videoPublishersByPriority[0]);
           } else {
             this.moveToLargeWindow(this.usersConnected[0]);
           }
         }
       }
-    } else if ( !this.shareContentOnDisplay ) { // follow speaker
+    } else if (!this.shareContentOnDisplay) { // follow speaker
       this.gridLayout = true;
       document.getElementById("focus-video").classList.add("hidden");
       document.getElementById("grid").classList.remove("grid_wrapper_follow");
@@ -1151,7 +1203,7 @@ class AgoraMultiChanelApp {
   // better to send RTM
   enableShareContent() {
     if (this.mainVideoId) {
-      this.returnLargeToGrid(); 
+      this.returnLargeToGrid();
     }
     // don't set until above called to take person out of this vie
     this.setShareContentDisplay(true);
@@ -1169,20 +1221,19 @@ class AgoraMultiChanelApp {
     this.showGridView();
   }
 
- setShareContentDisplay(enable) {
-  this.shareContentOnDisplay = enable;
-  if (enable) {
-    AgoraRTCUtils.setTempMaxProfile("180p");
-  } else {
-    AgoraRTCUtils.setTempMaxProfile(null);
+  setShareContentDisplay(enable) {
+    this.shareContentOnDisplay = enable;
+    if (enable) {
+      AgoraRTCUtils.setTempMaxProfile("180p");
+    } else {
+      AgoraRTCUtils.setTempMaxProfile(null);
+    }
   }
- }
 
   handleScreenshareSub(uid_string) {
-    var uidi=parseInt(uid_string, 10);
+    var uidi = parseInt(uid_string, 10);
     if (uidi < this.maxScreenshareUID) {
-      this.currScreenshareUID=uidi;
-
+      this.currScreenshareUID = uidi;
       if (!this.shareContentOnDisplay) {
         this.showContentView();
         if (this.mainVideoId !== uid_string) {
@@ -1195,12 +1246,11 @@ class AgoraMultiChanelApp {
           this.moveToLargeWindow(uid_string);
         }
         this.setShareContentDisplay(true);
-
       }
     }
   }
 
-  returnLargeToGrid(){
+  returnLargeToGrid() {
     this.moveToLargeWindow(); // removes mainVideoId if no arg passed
   }
 
@@ -1212,7 +1262,7 @@ class AgoraMultiChanelApp {
     }
     else if (uid_string) {
       var moveel = document.getElementById(uid_string);
-      if (moveel && this.usersConnected.indexOf(uid_string)>-1) { // this.videoPublishers[uid_string]) {
+      if (moveel && this.usersConnected.indexOf(uid_string) > -1) { // this.videoPublishers[uid_string]) {
         if (this.mainVideoId) {
           var prevMain = document.getElementById(this.mainVideoId);
           if (prevMain) { // put back in grid
@@ -1223,7 +1273,8 @@ class AgoraMultiChanelApp {
               gridel.insertBefore(prevMain, moveel);
             }
             if (this.videoPublishers[this.mainVideoId]) {
-              this.changeVideoStreamType(this.mainVideoId,this.defaultVideoStreamType);
+              // It will get set back to low if needed by the main state controller: manageRampUpAndDown()
+              //  this.changeVideoStreamType(this.mainVideoId,this.defaultVideoStreamType);
             }
           }
         }
@@ -1236,12 +1287,11 @@ class AgoraMultiChanelApp {
         }
         this.mainVideoId = uid_string;
         if (this.videoPublishers[this.mainVideoId]) {
-          this.changeVideoStreamType(uid_string,this.HighVideoStreamType);
+          this.changeVideoStreamType(uid_string, this.HighVideoStreamType);
         }
-
       }
     } else {
-      if (this.mainVideoId && this.usersConnected.indexOf(this.mainVideoId)>-1) { //  this.videoPublishers[this.mainVideoId]
+      if (this.mainVideoId && this.usersConnected.indexOf(this.mainVideoId) > -1) { //  this.videoPublishers[this.mainVideoId]
         var prevMain = document.getElementById(this.mainVideoId);
         if (prevMain) { // put back in grid
           var gridel = document.getElementById("grid");
@@ -1252,11 +1302,13 @@ class AgoraMultiChanelApp {
           }
         }
         if (this.videoPublishers[this.mainVideoId]) {
-          this.changeVideoStreamType(this.mainVideoId,this.defaultVideoStreamType);
+          // It will get set back to low if needed by the main state controller: manageRampUpAndDown()
+          // this.changeVideoStreamType(this.mainVideoId,this.defaultVideoStreamType);
         }
         this.mainVideoId = null;
       }
     }
+    this.bwLastIncreaseResolutionRequestEnabled = false;
     this.updateUILayout();
 
   }
@@ -1280,6 +1332,10 @@ class AgoraMultiChanelApp {
 
     this.rtmClient.on('ConnectionStateChanged', (newState, reason) => {
       console.log('this.rtmClient connection state changed to ' + newState + ' reason: ' + reason);
+    });
+
+    this.rtmClient.on('MessageFromPeer', ({ text }, senderId) => {
+      this.handleRTM(senderId, text);
     });
 
     this.rtmClient.login({ token: null, uid: this.rtmUid }).then(() => {
@@ -1331,9 +1387,12 @@ class AgoraMultiChanelApp {
     } else if (text.startsWith(this.WATCH)) {
       agoraWatchParty.handleRTM(text);
     } else if (text.startsWith(this.STOP_SCREENSHARE)) {
-        this.stopScreensharePublishLocal();
+      this.stopScreensharePublishLocal();
+    } else if (text.startsWith(this.INCREASE_RESOLUTION)) {
+      AgoraRTCUtils.increaseResolution();
+      console.log(text);
     }
-    
+
   }
 
   // Publishing Local Streams
@@ -1347,18 +1406,31 @@ class AgoraMultiChanelApp {
       this.myUid[i] = await this.clients[i].join(this.appId, tempChannelName,
         this.token, null);
     }
-    
-    // we will use the last channel name and UID to join RTM for send/receive VAD messages
-    this.rtmChannelName = tempChannelName;
-    this.rtmUid = this.myUid[i - 1].toString();
-    this.initRTM();
+
+
     this.numChannels = i;
   }
 
   async loadDevices() {
     // create local tracks
+
+    var vwidth=this.highVideoWidth;
+    var vheight=this.highVideoHeight;
+    var vfps=this.highVideoFPS;
+    var vbrmin =this.highVideoBitrateMin;
+    var vbrmax= this.highVideoBitrateMax;
+
+    if ( this.videoPublishersCount>4) {
+      var vwidth=360;
+      var vheight=180;
+      var vfps=24;
+      var vbrmin=150;
+      var vbrmax=500;
+      this.initialProfile="180p";
+    }
+
     [this.localTracks.audioTrack, this.localTracks.videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks(
-      {}, { encoderConfig: { width: this.highVideoWidth, height: this.highVideoHeight, frameRate: this.highVideoFPS, bitrateMin: this.highVideoBitrateMin, bitrateMax: this.highVideoBitrateMax } });
+      {}, { encoderConfig: { width: vwidth, height: vheight, frameRate: vfps, bitrateMin: vbrmin, bitrateMax: vbrmax } });
   }
 
   async startCamMic(cameraId, micId) {
@@ -1372,36 +1444,44 @@ class AgoraMultiChanelApp {
     }
   }
 
-  
-  async stopScreensharePublishLocal(){
+
+  async stopScreensharePublishLocal() {
     if (this.screenClient) {
-      if (this.screenTracks &&   this.screenTracks.videoTrack) {
+      if (this.screenTracks && this.screenTracks.videoTrack) {
         this.screenTracks.videoTrack.close(); // close on screen
-      }      
+      }
       await this.screenClient.leave();
-      this.screenClient=null;            
-    } 
+      this.screenClient = null;
+    }
   }
 
-  async stopScreensharePublish(){
+
+  async peerMessage(msg, peerId) {
+    this.rtmClient.sendMessageToPeer({ text: msg }, peerId).then(() => {
+    }).catch(error => {
+      console.error('AgoraRTM send peer message failure');
+    });
+  }
+
+  async stopScreensharePublish() {
     if (this.screenClient) {
-      this.stopScreensharePublishLocal();   
+      this.stopScreensharePublishLocal();
     } else {
       var msg = this.STOP_SCREENSHARE;
       this.rtmChannel.sendMessage({ text: msg }).then(() => {
       }).catch(error => {
-          console.log('AgoraRTM send failure for stopScreensharePublish');
+        console.error('AgoraRTM send failure for stopScreensharePublish');
       });
     }
   }
 
   async publishScreenShareToChannel() {
     this.screenClient = AgoraRTC.createClient(this.clientConfig);
-    var availableClient= this.getFirstOpenChannelInner();
-    let tempChannelName = this.baseChannelName + availableClient.toString(); 
-    var ssuid= this.currScreenshareUID+1;
-    if (ssuid>=this.maxScreenshareUID) {
-      ssuid=this.minScreenshareUID;
+    var availableClient = this.getFirstOpenChannelInner();
+    let tempChannelName = this.baseChannelName + availableClient.toString();
+    var ssuid = this.currScreenshareUID + 1;
+    if (ssuid >= this.maxScreenshareUID) {
+      ssuid = this.minScreenshareUID;
     }
     await this.screenClient.setClientRole("host");
     await this.screenClient.join(this.appId, tempChannelName, null, ssuid);
@@ -1425,10 +1505,10 @@ class AgoraMultiChanelApp {
         await this.screenClient.publish(this.screenTracks.videoTrack);
       }
 
-      var that=this;
+      var that = this;
       this.screenTracks.videoTrack._originMediaStreamTrack.onended = function () {
-        that.stopScreensharePublishLocal();  that.showGridView(); agoraWatchParty.togglePlayerControls(); 
-       };
+        that.stopScreensharePublishLocal(); that.showGridView(); agoraWatchParty.togglePlayerControls();
+      };
     }
 
     // send RTM to stop anyone else publishing screen
@@ -1439,14 +1519,32 @@ class AgoraMultiChanelApp {
 
   async publishAudioVideoToChannel() {
 
+
+
     // create together for single allow
     if (!this.localTracks.audioTrack) {
+
+      var vwidth=this.highVideoWidth;
+      var vheight=this.highVideoHeight;
+      var vfps=this.highVideoFPS;
+      var vbrmin =this.highVideoBitrateMin;
+      var vbrmax= this.highVideoBitrateMax;
+  
+      if ( this.videoPublishersCount>4) {
+        var vwidth=360;
+        var vheight=180;
+        var vfps=24;
+        var vbrmin=150;
+        var vbrmax=500;
+        this.initialProfile="180p";
+      }
+  
       if (this.cameraId && this.micId) {
         [this.localTracks.audioTrack, this.localTracks.videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks(
-          { microphoneId: this.micId }, { cameraId: this.cameraId, encoderConfig: { width: this.highVideoWidth, height: this.highVideoHeight, frameRate: this.highVideoFPS, bitrateMin: this.highVideoBitrateMin, bitrateMax: this.highVideoBitrateMax } });
+          { microphoneId: this.micId }, { cameraId: this.cameraId, encoderConfig: { width: vwidth, height: vheight, frameRate: vfps, bitrateMin: vbrmin, bitrateMax: vbrmax } });
       } else {
         [this.localTracks.audioTrack, this.localTracks.videoTrack] = await AgoraRTC.createMicrophoneAndCameraTracks(
-          {}, { encoderConfig: { width: this.highVideoWidth, height: this.highVideoHeight, frameRate: this.highVideoFPS, bitrateMin: this.highVideoBitrateMin, bitrateMax: this.highVideoBitrateMax } });
+          {}, {  encoderConfig: { width: vwidth, height: vheight, frameRate: vfps, bitrateMin: vbrmin, bitrateMax: vbrmax } });
       }
     }
 
@@ -1454,7 +1552,7 @@ class AgoraMultiChanelApp {
       this.clients[this.myPublishClient].enableDualStream().then(() => {
         console.log("Enable Dual stream success!");
       }).catch(err => {
-        console.log(err);
+        console.error(err);
       })
       this.clients[this.myPublishClient].setLowStreamParameter({ bitrate: this.lowVideoBitrate, framerate: this.lowVideoFPS, height: this.lowVideoHeightCurrent, width: this.lowVideoWidthCurrent });
     }
@@ -1463,22 +1561,26 @@ class AgoraMultiChanelApp {
     document.getElementById("local-player").classList.remove("hidden");
     await this.clients[this.myPublishClient].setClientRole("host");
     await this.clients[this.myPublishClient].publish([this.localTracks.audioTrack, this.localTracks.videoTrack]);
-  
+
     document.getElementById("mic_on").classList.add("hidden");
     document.getElementById("mic_off").classList.remove("hidden");
     document.getElementById("cam_on").classList.add("hidden");
     document.getElementById("cam_off").classList.remove("hidden");
-  
+
     if (!this.RTCUtilsInitialised) {
-      this.initRTCUtils();
+      this.initRTCUtils( this.initialProfile);
+
+      // we will use the last channel name and UID to join RTM for send/receive VAD messages
+      this.rtmChannelName = this.baseChannelName;
+      this.rtmUid = this.myUid[this.myPublishClient].toString();
+      this.initRTM();
     }
   }
 
-  
+
 
 
   handleVADEvents(_vad_exceedCount) {
-
     if (!agoraApp.rtmChannel || agoraApp.sendVAD !== "true") {
       return;
     }
@@ -1489,44 +1591,16 @@ class AgoraMultiChanelApp {
         if (agoraApp.vadUid && document.getElementById(agoraApp.vadUid)) {
           document.getElementById(agoraApp.vadUid).classList.remove("remote_video_active");
         }
-        agoraApp.vadUid="local-player";
+        agoraApp.vadUid = "local-player";
         document.getElementById(agoraApp.vadUid).classList.add("remote_video_active");
-        
+
       }).catch(error => {
-        console.log('AgoraRTM VAD send failure');
+        console.error('AgoraRTM VAD send failure');
       });
     }
   }
 
-  /*
-  async changeLowStreamResolutionIfNeeded() {
-    if (this.dynamicallyAdjustLowStreamResolution === "false") {
-      return;
-    }
 
-    var subs = this.getMapSize(this.videoPublishers);
-    if (subs >= this.SwitchDownLowPublishResolutionAt && this.lowVideoWidthCurrent != this.lowVideoWidthSmall) {
-      if ((Date.now() - this.lowStreamResolutionSwitch) > this.lowStreamResolutionSwitchWait) {
-        this.lowStreamResolutionSwitch = Date.now();
-        this.lowVideoWidthCurrent = this.lowVideoWidthSmall;
-        this.lowVideoHeightCurrent = this.lowVideoHeightSmall;
-        // avoid every client doing it together 
-        var that = this;
-        var randWait = (this.lowStreamResolutionSwitchWait / 2) * Math.random();
-        setTimeout(async function () { await that.stopPublishingVideo(); await that.publishVideoToChannel(); }, randWait);
-      }
-    } else if (subs < this.SwitchUpLowPublishResolutionAt && this.lowVideoWidthCurrent != this.lowVideoWidthInitial) {
-      if ((Date.now() - this.lowStreamResolutionSwitch) > this.lowStreamResolutionSwitchWait) {
-        this.lowStreamResolutionSwitch = Date.now();
-        this.lowVideoWidthCurrent = this.lowVideoWidthInitial;
-        this.lowVideoHeightCurrent = this.lowVideoHeightInitial;
-        var randWait = (this.lowStreamResolutionSwitchWait / 2) * Math.random();
-        var that = this;
-        setTimeout(async function () { await that.stopPublishingVideo(); await that.publishVideoToChannel(); }, randWait);
-      }
-    }
-  }
-*/
   async stopPublishingVideo() {
     if (this.localTracks.videoTrack != null) {
       console.log("### stopPublishingVideo VIDEO! ###");
@@ -1558,7 +1632,7 @@ class AgoraMultiChanelApp {
       this.clients[this.myPublishClient].enableDualStream().then(() => {
         console.log("Enable Dual stream success!");
       }).catch(err => {
-        console.log(err);
+        console.error(err);
       })
       this.clients[this.myPublishClient].setLowStreamParameter({ bitrate: this.lowVideoBitrate, framerate: this.lowVideoFPS, height: this.lowVideoHeightCurrent, width: this.lowVideoWidthCurrent });
     }
@@ -1566,12 +1640,14 @@ class AgoraMultiChanelApp {
     this.localTracks.videoTrack.play("local-player");
     await this.clients[this.myPublishClient].setClientRole("host");
     await this.clients[this.myPublishClient].publish(this.localTracks.videoTrack);
-    
+
+    /*
     if (this.enableHDAdjust === "true" || (AgoraRTCUtils.isIOS() &&  this.enableHDAdjustiOS === "true")) {
       AgoraRTCUtils.startAutoAdjustResolution(this.clients[this.myPublishClient], "360p_11", AgoraRTCUtils.isIOS());
       AgoraRTCUtilEvents.on("LocalVideoStatistics",agoraApp.processLocalVideoStatistics);
 
     }
+    */
 
     console.log("### PUBLISHED VIDEO Low Res changed " + this.lowVideoHeightCurrent + "p ###");
   }
@@ -1590,7 +1666,9 @@ class AgoraMultiChanelApp {
     });
     await this.clients[this.myPublishClient].setClientRole("host");
     await this.clients[publishToIndex].publish(this.localTracks.audioTrack);
+    /*
     AgoraRTCUtils.startVoiceActivityDetection(this.localTracks.audioTrack);
+    */
     console.log("### PUBLISHED AUDIO TO " + publishToIndex + "! ###");
   }
 
@@ -1601,7 +1679,7 @@ class AgoraMultiChanelApp {
       return this.myPublishClient;
     }
 
-    this.myPublishClient=this.getFirstOpenChannelInner();
+    this.myPublishClient = this.getFirstOpenChannelInner();
     await this.clients[this.myPublishClient].setClientRole("host");
     return this.myPublishClient;
   }
@@ -1626,310 +1704,6 @@ class AgoraMultiChanelApp {
         ua.forEach(element => element.audioTrack ? element.audioTrack.setVolume(vol) : 0);
     }
   }
-
-  getOutboundStats() {
-    var now = Date.now();
-    if ((now - this.outboundStatsLast) < this.OutboundStatsWait) {
-      return;
-    }
-
-    var timedelta = 0;
-    if (this.outboundStatsLast > 0) {
-      timedelta = now - this.outboundStatsLast;
-    }
-    this.outboundStatsLast = now;
-    if (this.myPublishClient > -1 && this.clients[this.myPublishClient] && this.clients[this.myPublishClient]._lowStream) {
-      var lowStream = this.clients[this.myPublishClient]._lowStream;
-      if (lowStream.pc && lowStream.pc.pc) {
-        lowStream.pc.pc.getStats(null).then(stats => {
-          stats.forEach(report => {
-            if (report.type === "outbound-rtp" && report.kind === "video") {
-              if (report["framesPerSecond"]) {
-                this.outboundFPSLow = report["framesPerSecond"];
-              }
-              if (report["framesEncoded"]) {
-                if (timedelta > 0) {
-                  this.outboundFPSLow2 = Math.floor(1000 * (report["framesEncoded"] - this.outboundFrameCountLow) / timedelta);
-                }
-                this.outboundFrameCountLow = report["framesEncoded"];
-              }
-            }
-          })
-        });
-      }
-    }
-
-    if (this.myPublishClient > -1 && this.clients[this.myPublishClient] && this.clients[this.myPublishClient]._highStream) {
-      var highStream = this.clients[this.myPublishClient]._highStream;
-
-      var videoStats = this.clients[this.myPublishClient].getLocalVideoStats();
-      this.outboundWidth = videoStats.sendResolutionWidth;
-      this.outboundHeight = videoStats.sendResolutionHeight;
-      this.outboundBitrate = Math.floor(videoStats.sendBitrate / 1000);
-
-      if (highStream.pc && highStream.pc.pc) {
-        highStream.pc.pc.getStats(null).then(stats => {
-          stats.forEach(report => {
-            if (report.type === "outbound-rtp" && report.kind === "video") {
-              if (report["framesPerSecond"]) {
-                this.outboundFPSHigh = report["framesPerSecond"];
-              }
-              if (report["framesEncoded"]) {
-                if (timedelta > 0) {
-                  this.outboundFPSHigh2 = Math.floor(1000 * (report["framesEncoded"] - this.outboundFrameCountHigh) / timedelta);
-                }
-                this.outboundFrameCountHigh = report["framesEncoded"];
-              }
-            }
-          })
-        });
-      }
-    }
-
-    // if the frames being encoded is less than expected 
-    // i.e. less than the top end
-    // then relay this to the group to avoid them limiting their remote video count
-
-    var localFPS = 0;
-    if (this.outboundFPSHigh2 > 0) {
-      localFPS = this.outboundFPSHigh2;
-    }
-    if (this.outboundFPSLow2 > 0 && this.outboundFPSLow2 < localFPS) {
-      localFPS = this.outboundFPSLow2;
-    }
-
-    if (localFPS > 0 && localFPS < this.FPSThresholdToIncreaseSubs * this.maxFPS) {
-      var msg = this.FPS + ':' + this.myUid[this.myPublishClient] + ":" + localFPS;
-      this.rtmChannel.sendMessage({ text: msg }).then(() => {
-        //console.log('AgoraRTM FPS send success :' + msg);
-      }).catch(error => {
-        console.log('AgoraRTM FPS send failure');
-      });
-    }
-  }
-
-  /*
-
-  useCallStatsToAdjustNumberOfSubscriptions() {
-
-    // based on remote and local FPS for each client we can determine if the number of remote videos can be
-    // increased, held or decreased.
-    var renderFrameRateSum = 0;
-    var renderFrameRateAvg = 0;
-    var StatMinStart = 1000000;
-    var renderFrameRateMin = StatMinStart;
-    var renderFrameRateCount = 0;
-    var uidKeyCount = 0;
-
-    var remotesIncrease = 0;
-    var remotesDecrease = 0;
-    var remotesHold = 0;
-
-
-    var packetLossAvg = 0;
-    var packetLossMax = 0;
-    var packetLossMin = StatMinStart;
-    var packetLossCount = 0;
-    var freezeRateAvg = 0;
-    var freezeRateMax = 0;
-    var freezeRateCount = 0;
-    var end2EndDelayAvg = 0;
-    var end2EndDelayMax = 0;
-    var end2EndDelayCount = 0;
-
-    this.getOutboundStats();
-
-    for (var i = 0; i < this.numClients; i++) {
-      var client = this.clients[i];
-      if (!client._users.length) {
-        continue;
-      }
-
-      // WebRTC Inbound Stats Per Client - Keep as useful to know how to get
-      // START INBOUND STATS EXAMPLE 
-      /*
-      if (client._remoteStream && this.debugInboundStats++ > 25) {
-        this.debugInboundStats = 0;
-
-        for (var u = 0; u < client._users.length; u++) {
-          var uid = client._users[u].uid;
-          var rc = client._remoteStream.get(uid);
-          if (rc) {
-            if (rc.pc && rc.pc.pc) {
-              rc.pc.pc.getStats(null).then(stats => {
-                stats.forEach(report => {
-                  if (report.type === "inbound-rtp" && report.kind === "video") {
-                    // if (report["framesDropped"])
-                    //  console.log(" framesDropped " + report["framesDropped"]);
-                    Object.keys(report).forEach(statName => { console.log(`inbound-rtp video for ${uid}  ${statName}: ${report[statName]}`); });
-                  }
-                  if (report.type === "inbound-rtp" && report.kind === "audio") {
-                    Object.keys(report).forEach(statName => { console.log(`inbound-rtp audio for ${uid}  ${statName}: ${report[statName]}`); });
-                  }
-                })
-              });
-            }
-          }
-        }
-      } 
-      */
-      
-      // END INBOUND STATS EXAMPLE 
-/*
-
-      var rvs = client.getRemoteVideoStats();
-      if (rvs) {
-        var rvskeys = Object.keys(rvs);
-        for (var k = 0; k < rvskeys.length; k++) {
-          uidKeyCount++;
-          // console.log("stats for "+ rvskeys[k]+" rfr  "+rvs[rvskeys[k]]["renderFrameRate"]);
-          if (rvs[rvskeys[k]]["renderFrameRate"]) {
-
-
-            var rfr = rvs[rvskeys[k]]["renderFrameRate"];
-            // console.log("remote FPS for "+rvskeys[k]+" "+this.fpsMap[rvskeys[k]]+" render rate"+rfr);
-            var expectedFPS = this.maxFPS;
-            if (this.fpsMap[rvskeys[k]]) {
-              expectedFPS = this.fpsMap[rvskeys[k]];
-            }
-            // examine render rate of remote
-            // if zero then its not properly connected.
-            if (rfr == 0) {
-              remotesHold++;
-            }
-            else if (rfr > expectedFPS * this.FPSThresholdToIncreaseSubs) {
-              remotesIncrease++;
-            } else if (rfr < expectedFPS * this.FPSThresholdToReduceSubs) {
-              remotesDecrease++;
-            } else {
-              remotesHold++;
-            }
-
-            renderFrameRateSum = renderFrameRateSum + rfr;
-            if (rfr < renderFrameRateMin) {
-              renderFrameRateMin = rfr;
-            }
-            renderFrameRateCount++;
-          }
-
-          if (this.superOptimise !== "true" && !isMobile()) {
-            if (rvs[rvskeys[k]]["packetLossRate"]) {
-              packetLossCount++;
-              packetLossAvg = packetLossAvg + rvs[rvskeys[k]]["packetLossRate"];
-              if (rvs[rvskeys[k]]["packetLossRate"] > packetLossMax) {
-                packetLossMax = rvs[rvskeys[k]]["packetLossRate"];
-              }
-              if (rvs[rvskeys[k]]["packetLossRate"] < packetLossMin) {
-                packetLossMin = rvs[rvskeys[k]]["packetLossRate"];
-              }
-            }
-
-            if (rvs[rvskeys[k]]["freezeRate"]) {
-              freezeRateCount++;
-              freezeRateAvg = freezeRateAvg + rvs[rvskeys[k]]["freezeRate"];
-              if (rvs[rvskeys[k]]["freezeRate"] > freezeRateMax) {
-                freezeRateMax = rvs[rvskeys[k]]["freezeRate"];
-              }
-            }
-
-            // avoid crazy outliers
-            if (rvs[rvskeys[k]]["end2EndDelay"] && rvs[rvskeys[k]]["end2EndDelay"] < 1000) {
-              end2EndDelayCount++;
-              end2EndDelayAvg = end2EndDelayAvg + rvs[rvskeys[k]]["end2EndDelay"];
-              if (rvs[rvskeys[k]]["end2EndDelay"] > end2EndDelayMax) {
-                end2EndDelayMax = rvs[rvskeys[k]]["end2EndDelay"];
-              }
-            }
-          }
-        }
-      }
-    }
-
-    if (renderFrameRateCount > 0) {
-      renderFrameRateAvg = Math.floor(renderFrameRateSum / renderFrameRateCount);
-    }
-
-    if (packetLossCount > 0) {
-      packetLossAvg = Math.floor(packetLossAvg / packetLossCount);
-    }
-
-    if (freezeRateCount > 0) {
-      freezeRateAvg = Math.floor(freezeRateAvg / freezeRateCount);
-    }
-
-    if (end2EndDelayCount > 0) {
-      end2EndDelayAvg = Math.floor(end2EndDelayAvg / end2EndDelayCount);
-    }
-
-
-    if (renderFrameRateMin == StatMinStart) {
-      renderFrameRateMin = -1;
-    }
-    if (packetLossMin == StatMinStart) {
-      packetLossMin = -1;
-    }
-
-    var subs = this.getMapSize(this.videoSubscriptions);
-    if (subs > 1 && renderFrameRateCount < (subs - 1)) { // account for missing render rates
-      remotesDecrease = remotesDecrease + ((subs - 1) - renderFrameRateCount);
-    }
-
-    // increase the number of subscriptions while conditions remain perfect 
-    if (this.rampUpAgressive === "true" && remotesIncrease > (remotesDecrease + remotesHold)) {
-      this.numRenderExceed++;
-    }
-    //  else if (remotesIncrease > 0 && remotesDecrease == 0 && remotesHold < (remotesIncrease / 10)) {
-    else if (remotesIncrease > 0 && ((remotesIncrease / 7) > (remotesDecrease + remotesHold))) {
-      this.numRenderExceed++;
-    } // reduce the number of subscriptions when the majority of streams are failing to keep up.
-    else if (subs > 0 && remotesDecrease > (remotesHold + remotesIncrease) / 2) {
-      this.numRenderExceed--;
-    }
-
-    if (this.numRenderExceed >= this.numRenderExceedToIncrease || this.getMapSize(this.videoSubscriptions) == 0) {
-      this.numRenderExceed = 0;
-      // increase VIDEO allow subs
-      if (this.allowedVideoSubs <= (this.getMaxVideoTiles() - this.allowedVideoSubsIncreaseBy) && this.allowedVideoSubs <= (this.getMapSize(this.videoPublishers) - this.allowedVideoSubsIncreaseBy) && this.allowedVideoSubs < (this.getMapSize(this.videoSubscriptions) + this.allowedVideoSubsIncreaseBy)) {
-        this.allowedVideoSubs = this.allowedVideoSubs + this.allowedVideoSubsIncreaseBy;
-      } else if (this.allowedVideoSubs <= (this.getMaxVideoTiles() - 1) && this.allowedVideoSubs <= (this.getMapSize(this.videoPublishers) - 1) && this.allowedVideoSubs < (this.getMapSize(this.videoSubscriptions) + 1)) {
-        this.allowedVideoSubs = this.allowedVideoSubs + 1;
-      }
-      // increase AUDIO allow subs
-      if (this.allowedAudioSubs < this.maxAudioSubscriptions && this.allowedAudioSubs < (this.getMapSize(this.audioSubscriptions) + 1)) {
-        this.allowedAudioSubs = this.getMapSize(this.audioSubscriptions) + 1;
-      }
-    } else if (this.numRenderExceed <= this.numRenderExceedToDecrease) {
-      this.numRenderExceed = 0;
-      // reduce VIDEO allowed subs
-      if (this.allowedVideoSubs - this.allowedVideoSubsDecreaseBy >= this.minVideoAllowedSubs) {
-        this.allowedVideoSubs = this.allowedVideoSubs - this.allowedVideoSubsDecreaseBy;
-      } else if (this.allowedVideoSubs > this.minVideoAllowedSubs) {
-        this.allowedVideoSubs--;
-      }
-      // reduce AUDIO allowed subs
-      if (this.allowedAudioSubs > this.minAudioAllowedSubs) {
-        this.allowedAudioSubs--;
-      }
-    }
-
-    // display stats in UI
-    if (this.superOptimise !== "true" && !isMobile()) {
-      var stats = "Render Rate avg:" + renderFrameRateAvg + " min:" + renderFrameRateMin + " cnt:" + renderFrameRateCount + " keys:" + uidKeyCount + " | Packet Loss min:" + Math.round(packetLossMin * 100) / 100 + " max:" + Math.round(packetLossMax * 100) / 100 + " | End-to-End avg:" + Math.round(end2EndDelayAvg * 100) / 100 + " max:" + Math.round(end2EndDelayMax * 100) / 100;
-      var stats2 = " Outbound FPS Low:" + this.outboundFPSLow2 + " High:" + this.outboundFPSHigh2 + " | Audio Subs " + this.getMapSize(this.audioSubscriptions) + "/" + this.maxAudioSubscriptions + "(" + this.audioPublishersByPriority.length + ")" + " | Video Subs " + this.getMapSize(this.videoSubscriptions) + "/" + this.getMaxVideoTiles() + "(" + this.allowedVideoSubs + "/" + this.videoPublishersByPriority.length + ")" + " | Inc:" + remotesIncrease + " Dec:" + remotesDecrease + " Hold:" + remotesHold;
-      document.getElementById("renderFrameRate").innerHTML = stats + "<br/>" + stats2;
-    } else {
-      var stats = " Inc:" + remotesIncrease + " Dec:" + remotesDecrease + " Hold:" + remotesHold;
-      var stats2 = this.outboundWidth + "x" + this.outboundHeight + " " + this.outboundFPSHigh2 + "fps " + this.outboundBitrate + "kbps";
-      document.getElementById("renderFrameRate").innerHTML = stats + "<br/>" + stats2;
-    }
-
-    if (this.enableFullLogging === "true") {
-      var stats = "Render Rate avg:" + renderFrameRateAvg + " min:" + renderFrameRateMin + " cnt:" + renderFrameRateCount + " keys:" + uidKeyCount + " | Packet Loss min:" + Math.round(packetLossMin * 100) / 100 + " max:" + Math.round(packetLossMax * 100) / 100 + " | End-to-End avg:" + Math.round(end2EndDelayAvg * 100) / 100 + " max:" + Math.round(end2EndDelayMax * 100) / 100;
-      var stats2 = " Outbound FPS Low:" + this.outboundFPSLow2 + " High:" + this.outboundFPSHigh2 + " | Audio Subs " + this.getMapSize(this.audioSubscriptions) + "/" + this.maxAudioSubscriptions + "(" + this.audioPublishersByPriority.length + ")" + " | Video Subs " + this.getMapSize(this.videoSubscriptions) + "/" + this.getMaxVideoTiles() + "(" + this.videoPublishersByPriority.length + ")" + " | Inc:" + remotesIncrease + " Dec:" + remotesDecrease + " Hold:" + remotesHold;
-      console.log((new Date()).toLocaleTimeString() + " " + stats + " " + stats2 + " numRenderExceed=" + this.numRenderExceed);
-    }
-  }
-  */
 
   // web is square
   getGridColCount(cells) {
@@ -1967,7 +1741,7 @@ class AgoraMultiChanelApp {
       document.getElementById("stats_button").classList.add("default_icon_right_mobile");
       document.getElementById("settings_button").classList.add("default_icon_right_mobile");
       //document.getElementById("main_body").classList.add("main_body_mobile");
-      
+
 
       if (document.getElementById("play_controls")) {
         document.getElementById("play_controls").classList.add("default_icon_left_mobile");
@@ -1994,27 +1768,23 @@ class AgoraMultiChanelApp {
     }
 
     // shownPersonToPerson is 2 person face time style call
-    // TODO move this to checking after subs
-   // var video_subs = this.getMapSize(this.videoSubscriptions); 
-   var video_subs = this.usersConnected.length; 
-    if (video_subs == 1 && this.gridLayout && !this.shareContentOnDisplay) {
+
+    var connected_users = this.usersConnected.length;
+    if (connected_users == 1 && this.gridLayout && !this.shareContentOnDisplay) {
       this.shownPersonToPerson = true;
       this.toggleLayout(true);
-    } else if (video_subs != 1 && this.shownPersonToPerson && !this.gridLayout && !this.shareContentOnDisplay) {
+    } else if (connected_users != 1 && this.shownPersonToPerson && !this.gridLayout && !this.shareContentOnDisplay) {
       this.shownPersonToPerson = false;
       this.toggleLayout();
     }
 
 
-    var cell_width = this.CellWidthBase;
+    var cell_width = this.CellWidthBase; // 160 and smallest possible size 
     var cell_height = this.CellHeightBase;
     var cell_margin = 4;
     var grid_padding = 6;
     var toolbar_height = document.getElementById("toolbar").offsetHeight;
     var toolbar_height_and_focus_height = toolbar_height;
-
-
-
 
     var cells = document.getElementsByClassName('remote_video'); // in grid (excludes focussed follow speaker)
     var cellCount = cells.length;
@@ -2025,7 +1795,7 @@ class AgoraMultiChanelApp {
     var cols = this.getGridColCount(cellCount);
     var rows = Math.ceil(cellCount / cols);
 
-    // less square on mobile
+    // desktop grid is square but mobile is rectangular
     if (isMobile() && cols > 2) {
       if (this.landscape) {
         if (cellCount < 16) {
@@ -2034,11 +1804,11 @@ class AgoraMultiChanelApp {
         else if (cellCount < 24) {
           rows = 3;
         } else {
-          rows = 4; 
+          rows = 4;
         }
         cols = Math.ceil(cellCount / rows);
       } else {
-        if (cellCount< 16) { // portrait and fewer than 16
+        if (cellCount < 16) { // portrait and fewer than 16
           cols = 2;
         }
         else if (cellCount < 24) {
@@ -2054,32 +1824,30 @@ class AgoraMultiChanelApp {
     //  follow speaker/content mode
     if (!this.gridLayout) { //
       // keep single row
-
       // portrait mobile can handle up to 3 rows of 2
       if (isMobile()) {
         if (!this.landscape) { // portrait
-          if (cellCount>6) {
-            rows=2;
+          if (cellCount > 6) {
+            rows = 2;
           }
         } else {  // landscape
-          rows=1; 
+          rows = 1;
         }
       } else {
         rows = 1;
-        if (cellCount>6) {
+        if (cellCount > 6) {
           rows = 2;
         }
       }
-        
-     
+
       cols = Math.ceil(cellCount / rows);
-      if (video_subs == 1 && !this.shareContentOnDisplay) {  // handle two people - me and one other
+      if (connected_users == 1 && !this.shareContentOnDisplay) {  // handle two people - me and one other
         var focus_height = height - toolbar_height - grid_padding * 3;
         var focus_width = width - (grid_padding * 2);
         document.getElementById("focus-video").style.height = focus_height + 'px';
         document.getElementById("focus-video").style.width = focus_width + 'px';
         toolbar_height_and_focus_height = toolbar_height + focus_height;
-        rows=1;
+        rows = 1;
         cols = 1;
       }
       else if (this.landscape) {
@@ -2102,75 +1870,32 @@ class AgoraMultiChanelApp {
     document.getElementById("agoravideoplayer").style.height = document.getElementById("focus-video").style.height;
     document.getElementById("agoravideoplayer").style.width = document.getElementById("focus-video").style.width;
 
-    var toolbar_width = 0;
-
-    // mobile special layouts
-    /*
-    if (isMobile()) {
-      
-      //TODOX for mobile in landscape put back to grid mode (if not share content or shownPersonToPerson)
-      if (!this.gridLayout && this.landscape && !this.shareContentOnDisplay && video_subs != 1) {
-        this.toggleLayout();
-      }
-
-      if (this.landscape && rows > 1) {
-        this.mobileUIUpdatedLandscape = true;
-        this.mobileUIUpdatedPortrait = false;
-        toolbar_width = 120;
-        var that = this;
-        var els = document.getElementsByClassName("default_icon");
-        Array.prototype.forEach.call(els, function (el) {
-          if (!el.classList.contains("hidden"))
-            el.classList.add("default_icon_mobile_landscape");
-        });
-        document.getElementById("main_body").classList.add("main_body_mobile_landscape");
-        document.getElementById("media_controls").classList.add("media_controls_mobile_landscape");
-        document.getElementById("settings_controls").classList.add("hidden");
-        document.getElementById("stats_container").classList.add("hidden")
-        document.getElementById("toolbar").classList.remove("headerOpen");
-        // document.getElementById("stats_container").classList.add("hidden");
-
-      } else {
-        this.mobileUIUpdatedLandscape = false;
-        this.mobileUIUpdatedPortrait = true;
-        var els = document.getElementsByClassName("default_icon");
-        Array.prototype.forEach.call(els, function (el) {
-          el.classList.remove("default_icon_mobile_landscape");
-        });
-        document.getElementById("main_body").classList.remove("main_body_mobile_landscape");
-        document.getElementById("media_controls").classList.remove("media_controls_mobile_landscape");
-        document.getElementById("settings_controls").classList.remove("hidden");
-        // document.getElementById("stats_container").classList.remove("hidden");
-      }
-    }*/
-
     // mobile grid gaps
     if (isMobile()) {
-      var mel= document.getElementById("main_body");
+      var mel = document.getElementById("main_body");
       if (!this.landscape) { // portrait
-       if (!mel.classList.contains("main_body_mobile_portrait")) {
-        mel.classList.add("main_body_mobile_portrait")
-       }
-       if (mel.classList.contains("main_body_mobile_landscape")) {
-        mel.classList.remove("main_body_mobile_landscape")
-       }
+        if (!mel.classList.contains("main_body_mobile_portrait")) {
+          mel.classList.add("main_body_mobile_portrait")
+        }
+        if (mel.classList.contains("main_body_mobile_landscape")) {
+          mel.classList.remove("main_body_mobile_landscape")
+        }
       } else {  // landscape
         if (!mel.classList.contains("main_body_mobile_landscape")) {
           mel.classList.add("main_body_mobile_landscape")
-         }
-         if (mel.classList.contains("main_body_mobile_portrait")) {
+        }
+        if (mel.classList.contains("main_body_mobile_portrait")) {
           mel.classList.remove("main_body_mobile_portrait")
-         }
+        }
       }
     }
-
 
     document.getElementById("grid").style.gridTemplateColumns = "repeat(" + cols + ", 1fr)";
 
     var grid_available_height = height - toolbar_height_and_focus_height - (grid_padding * (rows + 2));
-    var grid_available_width = width - toolbar_width - (grid_padding * cols);
+    var grid_available_width = width - (grid_padding * cols);
 
-    if (video_subs == 1 && !this.gridLayout && !this.shareContentOnDisplay) { // 1 other person to display larger
+    if (connected_users == 1 && !this.gridLayout && !this.shareContentOnDisplay) { // 1 other person to display larger
       document.getElementById("grid").classList.add("grid_over");
       grid_available_height = 90;
     } else {
@@ -2203,8 +1928,8 @@ class AgoraMultiChanelApp {
       cells[i].classList.add("hidden");
     }
 
-    var grid_width = (cell_width * cols) + ((cols) * cell_margin)+3;
-    var grid_height = (cell_height * rows) + ((rows) * cell_margin)+3;
+    var grid_width = (cell_width * cols) + ((cols) * cell_margin) + 3;
+    var grid_height = (cell_height * rows) + ((rows) * cell_margin) + 3;
     if (grid_width > width) {
       grid_width = width;
     }
@@ -2214,28 +1939,21 @@ class AgoraMultiChanelApp {
 
     var grid_actual_width = document.getElementById("grid").offsetWidth;
     var grid_actual_height = document.getElementById("grid").offsetHeight;
-    
-    /*
-    if (this.landscape && isMobile() && rows > 1 &&  !this.shareContentOnDisplay) {
-      document.getElementById("grid").style.marginTop = (height - grid_actual_height) / 2 + 'px';
-      document.getElementById("grid").style.marginLeft = '0px';
-      document.getElementById("media_controls").style.marginTop = ((height / 2) - 100) + 'px';
+
+    document.getElementById("grid").style.marginTop = '0px';
+    var ml = ((width - grid_actual_width) / 2);// - (   + 1) ;
+    if (ml < 0) {
+      ml = 0;
+
     }
-    else if (this.landscape && isMobile() &&  !this.shareContentOnDisplay) {
-      document.getElementById("grid").style.marginTop = (height - grid_actual_height - toolbar_height_and_focus_height) / 2 + 'px';
-      document.getElementById("grid").style.marginLeft = '0px';
-      document.getElementById("media_controls").style.marginTop = '0px';
-    }
-    else {*/
-      document.getElementById("grid").style.marginTop = '0px';
-      document.getElementById("grid").style.marginLeft = ((width - grid_actual_width) / 2) - (cell_margin + 1) + 'px';
-      document.getElementById("media_controls").style.marginTop = '0px';
-    //}
+    document.getElementById("grid").style.marginLeft = ml + 'px';
+    document.getElementById("media_controls").style.marginTop = '0px';
 
     document.getElementById("local-player").style.width = cell_width + 'px';
     document.getElementById("local-player").style.height = cell_height + 'px';
 
-    if (document.getElementById(this.vadUid) && this.gridLayout) {
+    // add orange box around speaker 
+    if (this.vadUid && document.getElementById(this.vadUid) && this.gridLayout) {
       document.getElementById(this.vadUid).classList.add("remote_video_active");
       if (document.getElementById(this.vadUid).children[0]) {
         document.getElementById(this.vadUid).children[0].style.backgroundColor = "";
@@ -2311,12 +2029,12 @@ function toggleMic() {
   if (agoraApp.localTracks.audioTrack._enabled) {
 
     agoraApp.localTracks.audioTrack.setEnabled(false);
-    
-    if (agoraApp.vadUid=="local-player") { 
+
+    if (agoraApp.vadUid == "local-player") {
       document.getElementById(agoraApp.vadUid).classList.remove("remote_video_active");
-      agoraApp.vadUid=null;
+      agoraApp.vadUid = null;
     }
-  
+
     document.getElementById("mic_off").classList.add("hidden");
     document.getElementById("mic_on").classList.remove("hidden");
   }
@@ -2494,7 +2212,7 @@ async function connect() {
   await agoraApp.init();
   // allow time to find users in each channel
   // this is a hack and a production multi channel 
-  setTimeout( async function () {  await agoraApp.startCamMic() }, 4000);
+  setTimeout(async function () { await agoraApp.startCamMic() }, 4000);
 }
 
 window.addEventListener('resize', resizeGrid);
