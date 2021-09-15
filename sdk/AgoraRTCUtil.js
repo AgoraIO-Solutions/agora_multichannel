@@ -577,7 +577,7 @@ var AgoraRTCUtils = (function () {
     if (_nackException) {
       rrMultiplier=2;
     }
-    if (_clientStatsMap.AvgRxRVol > (12*rrMultiplier) ||  _clientStatsMap.AvgRxNR > 12 ||  _fpsVol>12.0 ) {
+    if (_clientStatsMap.AvgRxRVol > (12*rrMultiplier) ||  _clientStatsMap.AvgRxNR > 12 ||  _fpsVol>10.0 ) {
       // critical or poor
       if (_clientStatsTrackMap.RemoteStatus!=RemoteStatusPoor) {
         _clientStatsTrackMap.RemoteStatus=RemoteStatusPoor;
@@ -586,7 +586,7 @@ var AgoraRTCUtils = (function () {
         _clientStatsTrackMap.RemoteStatusDuration=Date.now()-_clientStatsTrackMap.RemoteStatusStart;        
       }
 
-      if (_clientStatsMap.AvgRxRVol > (20*rrMultiplier) ||  _clientStatsMap.AvgRxNR > 30 ||  _fpsVol>25.0) {
+      if (_clientStatsMap.AvgRxRVol > (20*rrMultiplier) ||  _clientStatsMap.AvgRxNR > 30 ||  _fpsVol>20.0) {
 
         if ( _clientStatsMap.AvgRxNR > 30 ) {
           _nackException=true;
