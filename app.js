@@ -101,7 +101,6 @@ class AgoraMultiChanelApp {
     this.token = null;
 
     // Each agora client connects to one Agora channel
-    this.maxClients = 1;
     this.numVideoTiles = 0;
 
     this.videoSubscriptions = {}; // maps to startTime and streamType and gets count often which is not efficient 
