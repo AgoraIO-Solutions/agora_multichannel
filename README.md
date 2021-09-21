@@ -16,6 +16,15 @@ Depenending on your network, it can take a reasonabling long amount of time to r
 
 Usage:
 
-clone this repo into a folder being served by a webserver e.g. nginx Access the demo using an Agora appid which doesn't have tokens enabled e.g. https://sokool.io/agora_multichannel/?appid=20FFFFFFFFFb7c0cf5aPPPPPPPP537
+clone this repo into a folder being served by a webserver e.g. nginx 
+Access the demo using an Agora appid (which doesn't have tokens enabled)
+e.g. https://sokool.io/agora_multichannel/?appid=AAAAAAAA
 
-If you wanted to use tokens you would need to pass a token into the page for each of the channels the user is joining.
+A more advanced example which sets the name, number and host count:
+https://sa-utils.agora.io/demo/?appid=AAAAAAAA&channelBase=multi&maxClients=16&maxUsersPerChannel=1
+
+appid Your AppId
+channelBase The common prefix that each of the multiple channels will have at the start of their name
+maxClients The maximum number of channels 
+maxUsersPerChannel The maximum number of hosts in each channel
+
