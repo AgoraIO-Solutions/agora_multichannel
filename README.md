@@ -21,10 +21,10 @@ Access the demo using an Agora appid (which doesn't have tokens enabled)
 e.g. https://sokool.io/agora_multichannel/?appid=AAAAAAAA
 
 A more advanced example which sets the name, number and host count:
-https://sa-utils.agora.io/demo/?appid=AAAAAAAA&channelBase=multi&maxClients=16&maxUsersPerChannel=1
+https://sa-utils.agora.io/demo/?appid=AAAAAAAA&channelNamePrefix=multi&maxChannels=16&maxHostsPerChannel=1
 
 appid - Your AppId.  
-channelBase - The common prefix that each of the multiple channels will have at the start of their name.  
-maxClients - The maximum number of channels.      
-maxUsersPerChannel - The maximum number of hosts in each channel.   
+channelNamePrefix - The common prefix that each of the multiple channels will have at the start of their name.  
+maxChannels - The maximum number of channels.      
+maxHostsPerChannel - The maximum number of hosts in each channel.   
 
