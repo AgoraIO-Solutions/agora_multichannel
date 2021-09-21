@@ -23,8 +23,8 @@ e.g. https://sokool.io/agora_multichannel/?appid=AAAAAAAA
 A more advanced example which sets the name, number and host count:
 https://sa-utils.agora.io/demo/?appid=AAAAAAAA&channelBase=multi&maxClients=16&maxUsersPerChannel=1
 
-appid Your AppId.  
-channelBase The common prefix that each of the multiple channels will have at the start of their name.  
-maxClients The maximum number of channels.      
-maxUsersPerChannel The maximum number of hosts in each channel.   
+appid - Your AppId.  
+channelBase - The common prefix that each of the multiple channels will have at the start of their name.  
+maxClients - The maximum number of channels.      
+maxUsersPerChannel - The maximum number of hosts in each channel.   
 
