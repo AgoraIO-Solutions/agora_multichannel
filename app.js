@@ -50,10 +50,13 @@ class AgoraMultiChanelApp {
     this.AspectRatio = 16 / 9;
 
     // Page Parameters
-    this.appId = getParameterByName("appid") || "20b7c51ff4c644ab80cf5a4e646b0537";
-    this.baseChannelName = getParameterByName("channelBase") || "SA-MULTITEST";
-    this.maxClients = getParameterByNameAsInt("maxClients") || 4;
-    this.maxUsersPerChannel = getParameterByNameAsInt("maxUsersPerChannel") || 16;
+    this.appId = getParameterByName("appid") || "";
+    this.maxClients = getParameterByNameAsInt("maxClients") || getParameterByNameAsInt("maxChannels") || 4;
+    this.baseChannelName = getParameterByName("channelBase") ||  getParameterByName("channelNamePrefix") || "SA-MULTITEST";
+    this.channel = getParameterByName("channel");
+    this.userid = getParameterByNameAsInt("userid");
+    this.maxUsersPerChannel = getParameterByNameAsInt("maxUsersPerChannel") || getParameterByNameAsInt("maxHostsPerChannel") || 16;
+
     this.isMobile = getParameterByName("isMobile") || "false";
     this.maxVideoTiles = getParameterByNameAsInt("maxVideoTiles") || ((this.isMobile === "true" || isMobile()) ? 16 : 49);
     this.maxAudioSubscriptions = getParameterByNameAsInt("maxAudioSubscriptions") || 6;
@@ -62,6 +65,9 @@ class AgoraMultiChanelApp {
     this.initialVideoAllowedSubs = getParameterByNameAsInt("initialVideoAllowedSubs") || ((this.isMobile === "true" || isMobile()) ? 1 : 16);
     this.minAudioAllowedSubs = getParameterByNameAsInt("minAudioAllowedSubs") || 3;
     this.intervalManageSubscriptions = getParameterByNameAsInt("intervalManageSubscriptions") || 150;
+
+    this.maxCallLengthSeconds = getParameterByNameAsInt("maxCallLengthSeconds") || (60*60);
+    
     this.numRenderExceedToIncrease = getParameterByNameAsInt("numRenderExceedToIncrease") || 2;
     this.allowedVideoSubsIncreaseBy = getParameterByNameAsInt("allowedVideoSubsIncreaseBy") || ((this.isMobile === "true" || isMobile()) ? 2 : 3);
     this.numRenderExceedToDecrease = getParameterByNameAsInt("numRenderExceedToDecrease") || -6;
@@ -253,6 +259,10 @@ class AgoraMultiChanelApp {
       alert("No appid");
       return;
     }
+
+    if (this.channel) {
+      this.maxClients=1;
+    }
   }
 
   async init() {
@@ -270,6 +280,13 @@ class AgoraMultiChanelApp {
 
     AgoraRTCUtils.setRTCClients(this.clients, this.numClients);
     AgoraRTCUtils.startInboundVolumeMonitor(150); // ms interval
+
+    // hangup after 1 hour
+    setTimeout(() => {
+      this.leaveChannels();
+      alert("Call Ended");
+      },this.maxCallLengthSeconds*1000);
+
 
     if (this.enableRemoteCallStatsMonitor === "true") {
       AgoraRTCUtils.startRemoteCallStatsMonitor(500); // ms interval
@@ -1397,19 +1414,32 @@ class AgoraMultiChanelApp {
 
   // Publishing Local Streams
   async joinChannels() {
-    let tempChannelName = "";
-    let i = 0;
-    // Join one channel for each client object.
-    for (i; i < this.numClients; i++) {
-      tempChannelName = this.baseChannelName + i.toString();
-      await this.clients[i].setClientRole("audience");
-      this.myUid[i] = await this.clients[i].join(this.appId, tempChannelName,
-        this.token, null);
+    if (this.channel) {
+        await this.clients[0].setClientRole("audience");
+        this.myUid[0] = await this.clients[0].join(this.appId, this.channel,
+          this.token, this.userid);
+      this.numChannels = 1;
+    } else {    
+      let tempChannelName = "";
+      let i = 0;
+      // Join one channel for each client object.
+      for (i; i < this.numClients; i++) {
+        tempChannelName = this.baseChannelName + i.toString();
+        await this.clients[i].setClientRole("audience");
+        this.myUid[i] = await this.clients[i].join(this.appId, tempChannelName,
+          this.token, null);
+      }
+      this.numChannels = i;
     }
-
-
-    this.numChannels = i;
   }
+
+  // Publishing Local Streams
+  async leaveChannels() {
+    for (var i=0; i < this.numClients; i++) {
+      await this.clients[i].leave();
+    }
+  }
+
 
   async loadDevices() {
     // create local tracks
@@ -1479,6 +1509,9 @@ class AgoraMultiChanelApp {
     this.screenClient = AgoraRTC.createClient(this.clientConfig);
     var availableClient = this.getFirstOpenChannelInner();
     let tempChannelName = this.baseChannelName + availableClient.toString();
+    if (this.channel){
+      tempChannelName=this.channel;
+    }
     var ssuid = this.currScreenshareUID + 1;
     if (ssuid >= this.maxScreenshareUID) {
       ssuid = this.minScreenshareUID;

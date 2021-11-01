@@ -14,7 +14,7 @@
   -webkit-border-radius: 6px;
   border-radius: 6px;
   overflow: hidden;
-  iobject-fit: contain !important;
+  object-fit: contain !important;
   }
 
   .agora_select {
