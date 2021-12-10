@@ -25,6 +25,28 @@
   color: #ddd;
   }
 
+  .cpu_stats{
+    color: #81bfe4 !important;
+  }
+
+  .cpu_statso{
+    width: 250px !important;
+    font-size: 18px;
+    display: inline-block;
+    color: #bfbfbf;
+  }
+
+  .cpu_stats_mobile{
+    color: #81bfe4 !important;
+  }
+
+  .cpu_stats_mobile_o{
+    width: 120px !important;
+    font-size: 14px;
+    display: inline-block;
+    color: #bfbfbf;
+  }
+
   .fixed_stat{
     display: inline-block;
     width: 70px;
@@ -43,9 +65,7 @@
     opacity: 0.9;
   }
 
-  .stats_display_inner_low{
-    color:#e4320f !important;
-  }
+
 
   .stats_display {
     color:#ffbf00;
@@ -53,12 +73,21 @@
     margin-top: 2px;
     position: absolute;
     z-index: 100;
-    font-size: 9px;
+    font-size: 12px;
+  }
+
+  .stats_display_inner_low{
+    color:#ffbf00 !important;
   }
 
   .stats_display_small_font {
-    font-size: 9px !important;
+    font-size: 8px !important;
   }
+
+  .stats_display_large_font {
+    font-size: 16px !important;
+  }
+
 
 
   .stats_display_local {
@@ -136,9 +165,12 @@
   .agora_stats {
   width: 100% !important;
   height: 48px;
+  pheight: 32px;
   font-size: 14px;
   padding: 2px;
+  margin-top: 8px !important;
   margin: 2px;
+  bbackground-color: #5b5b5b;
   background-color: #b8b8b8;
   color: black;
   display: inline-block;

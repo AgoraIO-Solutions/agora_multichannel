@@ -7,9 +7,7 @@
   <link rel="stylesheet" href="./assets/bootstrap.min.css">
   <script src="./sdk/AgoraRTC_N-4.7.1.js"></script>
   <script src="./sdk/agora-rtm-sdk-1.4.3.js"></script>
-
   <script src="./sdk/AgoraRTCUtil.js?gg=cachb65"></script>
-  <!--script src="./sdk/AgoraWatchYT.js"></script-->
   <script src="./sdk/AgoraWatchParty.js?ab654=cachb65"></script>
   <link rel="stylesheet" href="./index.css?1=cachb65">
   <link rel="stylesheet" href="./grid.css?1=cachb65">
@@ -89,21 +87,7 @@
                   <input type="text" class="cam-input form-control" aria-label="Text input with dropdown button"
                     readonly>
                 </div>
-                <!-- 
-          <h5 class="device-name">Speaker</h5>
-          <p class="device-intro">Play sound to test if the speaker works. (Switching speakers works only on Chrome).</p>
-          <div class="input-group mb-3">
-            <div class="input-group-prepend">
-              <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Speakers</button>
-              <div class="speaker-list dropdown-menu"></div>
-            </div>
-            <input type="text" class="speaker-input form-control" aria-label="Text input with dropdown button" readonly>
-            <button class="speaker-play btn btn-primary btn-sm">play</button>
-          </div>
-          <div class="button">
-          </div>     -->
                 <div id="pre-local-player" class="player"></div>
-
               </div>
             </div>
             <div class="modal-footer">
@@ -119,20 +103,10 @@
 
       <div id="player_container" class="hidden">
         <div>
-          <!--
-          <label for="fname">Youtube Id: </label>
-          <input type="text" id="ytid" name="ytid" value="kHMXNPkNTTQ">
-          <img src='img/cue.webp' onclick="agoraWatchYT.cueVideo()" id="ytcue" class="default_icon default_icon_left play_icon" />
-          <img src='img/play.png' onclick="agoraWatchYT.playVideo()" id="ytplay" class="default_icon default_icon_left play_icon" />
-          <img src='img/stop.webp' onclick="agoraWatchYT.stopVideo()" id="ytstop" class="default_icon default_icon_left play_icon stop_icon" />
-          -->
           <label class="mp4label" for="fname">Content URL </label>
-
           <input type="text" class="watch_input" id="watchid" value="https://sa-utils.agora.io/media/v223.mp4">  
           <select id="watchiddd" onchange="document.getElementById('watchid').value=(this.value); ">
-              <option></option>
-              
-              
+              <option></option>        
               <option value='https://sa-utils.agora.io/media/30720607-hd.mp4'>Shark Clip</option>
               <option value='https://sa-utils.agora.io/media/monuments-movie-trailer-1_h720p.mov'>Moments - Trailer</option>
               <option value='https://sa-utils.agora.io/media/rons-gone-wrong-trailer-1_h720p.mov'>Rons Gone Wrong - Trailer</option>
@@ -149,10 +123,6 @@
 
           <img src='img/stop.png'  title="Stop presenting"  onclick="agoraWatchParty.stopVideo(); agoraApp.stopScreensharePublish();  agoraApp.showGridView(); agoraWatchParty.hidePlayerControls(); " id="stop"
             class="default_icon default_icon_left play_icon stop_icon" />
-
-          <!--<img src='img/play.png' onclick="agoraWatchParty.playVideo()" id="play" class="default_icon default_icon_left play_icon" />
-         
-          -->
         </div>
       </div>
     </div>
@@ -174,11 +144,6 @@
 
   </div>
 </body>
-
-<script>
-
-
-</script>
 
 <script src="./assets/jquery-3.4.1.min.js"></script>
 <script src="./assets/bootstrap.bundle.min.js"></script>
