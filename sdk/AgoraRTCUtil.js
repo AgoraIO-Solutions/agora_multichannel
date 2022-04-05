@@ -197,14 +197,12 @@ var AgoraRTCUtils = (function () {
       fpsLowObserved: _fpsLowObserved,
       sendFrameRate : videoStats.sendFrameRate
     };
-
   }
 
   function changeProfile(profileInd) {
     if (profileInd < 0 || profileInd >= _profiles.length) {
       return;
     }
-
 
     _currentProfile = profileInd;
     var profile = _profiles[profileInd];
@@ -431,22 +429,20 @@ var AgoraRTCUtils = (function () {
       StatsScheduleTime : 0
     };
 
-
     _monitorStart=Date.now();
     _clientStatsMap.StatsScheduleTime=_monitorStart-_monitorEnd;
     
-
-    //console.log("stats schedule time  "+());
-
-
     for (var i = 0; i < _rtc_num_clients; i++) {
       var client = _rtc_clients[i];
-      if (client._remoteStream) {
+      //if (client._remoteStream) {
+        if (client._p2pChannel.connection) {  
+          
         for (var u = 0; u < client._users.length; u++) {
           var uid = client._users[u].uid;
-          var rc = client._remoteStream.get(uid);
-          if (rc) {
-            if (rc.pc && rc.pc.pc) {
+          //var rc = client._remoteStream.get(uid);
+          
+          if (client._p2pChannel.connection.peerConnection && client.getRemoteVideoStats()[uid] && client._users[u].videoTrack && client._users[u].videoTrack._mediaStreamTrack) {
+            //if (rc.pc && rc.pc.pc) {
 
               // check each remote user has last stats map
               if (!_userStatsMap[uid]){
@@ -471,7 +467,7 @@ var AgoraRTCUtils = (function () {
                 };
               }
 
-              await rc.pc.pc.getStats(null).then(async stats => {
+              await client._p2pChannel.connection.peerConnection.getStats(client._users[u].videoTrack._mediaStreamTrack).then(async stats => {
                 await stats.forEach(report => {                
                   if (report.type === "inbound-rtp" && report.kind === "video") {
                     var now = Date.now();
@@ -479,6 +475,12 @@ var AgoraRTCUtils = (function () {
                     var packetsReceived = report["packetsReceived"];
                     var nackChange = (nack -  _userStatsMap[uid].lastNack);
                     var packetChange = (packetsReceived -  _userStatsMap[uid].lastPacketsRecvd);
+                    var resetStats=false;
+                    if (packetChange<0){          
+                      //console.error("packetChange < 0");            
+                     // packetChange=0;
+                      resetStats=true;
+                    } 
                     var timeDiff = now -  _userStatsMap[uid].lastStatsRead;
                     var nackRate = 0;
                     if (packetChange>0 && nackChange>0 ) {
@@ -489,17 +491,32 @@ var AgoraRTCUtils = (function () {
                     var totalDecodeTimeChange = 1000*(totalDecodeTime - _userStatsMap[uid].lastDecodeTime);
                     var framesDecodedChange =  (framesDecoded -  _userStatsMap[uid].lastFramesDecoded);
                     var decodeTime=(totalDecodeTimeChange/framesDecodedChange);
-                    if (decodeTime==0) {
+
+                    if (decodeTime<=0) {
                       decodeTime=0.01;
                     }
+/*
+console.log("codecId",report["codecId"]);
+console.log("frameWidth",report["frameWidth"]);
+console.log("trackId",report["trackId"]);
+console.log("ssrc",report["ssrc"]);
+console.log("uid",uid);
+console.log("report",report);
+console.log("packetsReceived",report["packetsReceived"]);
+console.log("packetChange",packetChange);
+console.log("lastPacketsRecvd",_userStatsMap[uid].lastPacketsRecvd);
+console.log(" ");
+*/
 
                     _userStatsMap[uid].lastStatsRead = now;
                     _userStatsMap[uid].lastNack = nack;            
                     _userStatsMap[uid].nackRate = nackRate;
                     _userStatsMap[uid].lastPacketsRecvd = packetsReceived;
+
+                    //console.log("BW  _userStatsMap[uid].lastPacketsRecvd ssrc "+report.ssrc+" uid "+uid+" packetsReceived"+packetsReceived);
                     _userStatsMap[uid].packetChange = packetChange;
                     _userStatsMap[uid].decodeTime = decodeTime;
-                    if (framesDecodedChange>100) {
+                    if (framesDecodedChange>100 || resetStats) {
                       _userStatsMap[uid].lastDecodeTime=totalDecodeTime;
                       _userStatsMap[uid].lastFramesDecoded=framesDecoded;
                     }
@@ -509,7 +526,12 @@ var AgoraRTCUtils = (function () {
 
               const remoteTracksStats = { video: client.getRemoteVideoStats()[uid], audio: client.getRemoteAudioStats()[uid] };
 
+              if (remoteTracksStats.video.renderFrameRate) {
               _userStatsMap[uid].renderFrameRate=Number(remoteTracksStats.video.renderFrameRate);
+              } else {
+                _userStatsMap[uid].renderFrameRate=0;
+                //console.warn("no remoteTracksStats.video.renderFrameRate");
+              }
               if (_userStatsMap[uid].receiveResolutionWidth!=Number(remoteTracksStats.video.receiveResolutionWidth).toFixed(0)){
                 _userStatsMap[uid].renderRates=[]; // clear out array when res changes
               }
@@ -553,7 +575,7 @@ var AgoraRTCUtils = (function () {
                 _clientStatsMap.MinRemoteDuration=_userStatsMap[uid].totalDuration;
               }              
 
-            }
+            //}
           }
         }
 
@@ -570,11 +592,8 @@ var AgoraRTCUtils = (function () {
           _clientStatsMap.MaxRTT=clientStats.RTT;  
         }
 
-        if (client._highStream) {
-         // console.log("start monitorRemoteCallStats  outbound "+(Date.now()));
-          var hrc=client._highStream;
-          if (hrc.pc && hrc.pc.pc) {
-            await hrc.pc.pc.getStats(null).then(async stats => {
+        if (client._p2pChannel.localTrackMap.get("videoTrack")) {
+            await client._p2pChannel.connection.peerConnection.getStats(client._p2pChannel.localTrackMap.get("videoTrack").track).then(async stats => {
               await stats.forEach(report => {
                 if (report.type === "outbound-rtp" && report.kind === "video") {
                   var totalEncodeTime = report["totalEncodeTime"];
@@ -589,7 +608,6 @@ var AgoraRTCUtils = (function () {
                   }
               })
             });
-          }
 
           var outgoingStats = client.getLocalVideoStats();
           _clientStatsMap.TxSendBitratekbps=Math.floor(outgoingStats.sendBitrate / 1000);
@@ -608,13 +626,7 @@ var AgoraRTCUtils = (function () {
     _clientStatsMap.AvgRxRVol=_clientStatsMap.SumRxRVol/_clientStatsMap.RemoteSubCount;
     _clientStatsMap.AvgRxNR=_clientStatsMap.SumRxNR/_clientStatsMap.RemoteSubCount;
     _clientStatsMap.AvgRxDecodeTime=_clientStatsMap.SumRxDecodeTime/_clientStatsMap.RemoteSubCount;
-    
-   // } else {
-   //   console.log(" _clientStatsMap.RemoteSubCount "+ _clientStatsMap.RemoteSubCount)
-   //   _clientStatsMap.AvgRxRVol=-1;
-   //   _clientStatsMap.AvgRxNR=-1;
-   // }
-    
+        
    if ( !_clientStatsMap.TxSendResolutionWidth ) {
      _fpsVol=-2;
    }
