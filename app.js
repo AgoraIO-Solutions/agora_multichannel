@@ -171,11 +171,13 @@ class AgoraMultiChanelApp {
     this.lowVideoBitrate = 200;
 
     this.highVideoWidth = 640; //isMobile() ? 320 : 640;
-    this.highVideoHeight = 360; // isMobile() ? 180 : 360;
-    this.highVideoFPS = this.maxFPS; //isMobile() ? 15 : this.maxFPS;
-    this.highVideoBitrateMin = 400;
-    this.highVideoBitrateMax = 1000;
-    this.initialProfile = "360p_11";
+
+    this.highVideoWidth = getParameterByNameAsInt("highVideoWidth") || 640;
+    this.highVideoHeight = getParameterByNameAsInt("highVideoHeight") || 360;
+    this.highVideoFPS = getParameterByNameAsInt("highVideoFPS") || this.maxFPS;
+    this.highVideoBitrateMin = getParameterByNameAsInt("highVideoBitrateMin") || 400;
+    this.highVideoBitrateMax = getParameterByNameAsInt("highVideoBitrateMax") || 1000;
+    this.initialProfile = getParameterByName("initialProfile") || "360p_11";
 
 
     // RTM
