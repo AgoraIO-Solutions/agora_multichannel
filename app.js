@@ -41,6 +41,7 @@ class AgoraMultiChanelApp {
     this.FPS = "FPS";
     this.WATCH = "WATCH";
     this.WATCHYT = "WATCHYT";
+    this.RTMCHAT = "RTMCHAT";
     this.STOP_SCREENSHARE = "STOP_SCREENSHARE";
     this.INCREASE_RESOLUTION = "INCREASE_RESOLUTION";
 
@@ -58,6 +59,9 @@ class AgoraMultiChanelApp {
     this.maxUsersPerChannel = getParameterByNameAsInt("maxUsersPerChannel") || getParameterByNameAsInt("maxHostsPerChannel") || 16;
 
     this.isMobile = getParameterByName("isMobile") || "false";
+
+    this.logoPath = getParameterByName("logoPath") ||  "";
+    this.enableChat = getParameterByName("enableChat") || "false";
     this.maxVideoTiles = getParameterByNameAsInt("maxVideoTiles") || ((this.isMobile === "true" || isMobile()) ? 16 : 49);
     this.maxAudioSubscriptions = getParameterByNameAsInt("maxAudioSubscriptions") || 6;
     this.minVideoAllowedSubs = getParameterByNameAsInt("minVideoAllowedSubs") || 1;
@@ -78,6 +82,8 @@ class AgoraMultiChanelApp {
 
     this.rampUpAgressive = getParameterByName("rampUpAgressive") || "false";
     this.cpuAlgoTest = getParameterByName("cpuAlgoTest") || "false";
+
+    this.chatName = getParameterByName("chatName") || "Guest"+(Math.floor(Math.random() * 900)+100);
 
     this.dynamicallyAdjustLowStreamResolution = getParameterByName("dynamicallyAdjustLowStreamResolution") || "false";
     // disable subscriptions for load testing clients 
@@ -171,13 +177,11 @@ class AgoraMultiChanelApp {
     this.lowVideoBitrate = 200;
 
     this.highVideoWidth = 640; //isMobile() ? 320 : 640;
-
-    this.highVideoWidth = getParameterByNameAsInt("highVideoWidth") || 640;
-    this.highVideoHeight = getParameterByNameAsInt("highVideoHeight") || 360;
-    this.highVideoFPS = getParameterByNameAsInt("highVideoFPS") || this.maxFPS;
-    this.highVideoBitrateMin = getParameterByNameAsInt("highVideoBitrateMin") || 400;
-    this.highVideoBitrateMax = getParameterByNameAsInt("highVideoBitrateMax") || 1000;
-    this.initialProfile = getParameterByName("initialProfile") || "360p_11";
+    this.highVideoHeight = 360; // isMobile() ? 180 : 360;
+    this.highVideoFPS = this.maxFPS; //isMobile() ? 15 : this.maxFPS;
+    this.highVideoBitrateMin = 400;
+    this.highVideoBitrateMax = 1000;
+    this.initialProfile = "360p_11";
 
 
     // RTM
@@ -185,6 +189,9 @@ class AgoraMultiChanelApp {
     this.rtmUid;
     this.rtmChannelName;
     this.rtmChannel;
+    this.chatWidth=0;  
+    this.logoHeight=0;             
+    this.grid_over="grid_over";
 
     // VAD
     this.vadUid;
@@ -225,11 +232,13 @@ class AgoraMultiChanelApp {
     this.outboundFrameCount = 0;
     this.InboundStatsMonitorInterval = 15;
     this.debugInboundStats = this.InboundStatsMonitorInterval;
+    this.uiInit = false;
     this.mobileUIUpdated = false;
     this.mobileUIUpdatedLandscape = false;
     this.mobileUIUpdatedPortrait = false;
     this.gridLayout = true;
     this.landscape = true;
+    this.uiinitlandscape = false;
 
     this.manageGridLast = 0;
     this.ManageGridWait = getParameterByNameAsInt("ManageGridWait") || 500;
@@ -248,6 +257,8 @@ class AgoraMultiChanelApp {
     this.ui_cols = 0;
     this.ui_cell_height = 0;
     this.ui_cell_width = 0;
+
+    this.RTMCHATSEPERATOR="::";
 
 
     // check an appid has been passed in
@@ -1177,6 +1188,12 @@ class AgoraMultiChanelApp {
 
     this.rtmClient.on('ConnectionStateChanged', (newState, reason) => {
       console.log('this.rtmClient connection state changed to ' + newState + ' reason: ' + reason);
+      if (newState=="CONNECTED") {
+        document.getElementById('usermsg').disabled=false;
+        document.getElementById('usermsg').focus();
+      } else {
+        document.getElementById('usermsg').disabled=true;
+      }
     });
 
     this.rtmClient.on('MessageFromPeer', ({ text }, senderId) => {
@@ -1236,10 +1253,73 @@ class AgoraMultiChanelApp {
     } else if (text.startsWith(this.INCREASE_RESOLUTION)) {
       AgoraRTCUtils.increaseResolution();
       console.log(text);
+    } else if (text.startsWith(this.RTMCHAT)) {
+      let msg=text.substring(this.RTMCHAT.length);
+      var ind=msg.indexOf(this.RTMCHATSEPERATOR);
+      var sender=msg.substring(0,ind);
+      var chatmsg=msg.substring(ind+this.RTMCHATSEPERATOR.length);
+      this.receiveChat(chatmsg,sender);
+    } 
+  }
+
+  receiveChat(msg,senderId){
+    let chatbox=document.getElementById('chatbox');
+    let cclass="chatcellleft";
+    let extra=null;
+    let datespan=null;
+    let datapm=formatAMPM(new Date());
+    
+    
+    if (senderId==='me'){
+      cclass="chatcellright";
+      datespan="<span class='"+cclass+"date'>"+datapm+"</span>";   
+      extra="<span class='"+cclass+"'>"+ msg+"</span>";          
+    } else {
+      datespan="<span class='"+cclass+"date'><b>"+senderId+"</b> &nbsp;"+datapm+"</span>";   
+      extra="<span class='"+cclass+"'>"+ msg+"</span>";    
     }
+
+    chatbox.innerHTML += datespan+extra;
+    $("#chatbox").stop().animate({ scrollTop: $("#chatbox")[0].scrollHeight}, 1000);
 
   }
 
+  chatKey(event,val) {
+      if(event.key === 'Enter') {
+        this.sendChat();    
+    }
+  }
+
+  sendChat() {    
+    let msg=document.getElementById('usermsg').value.trim();   
+    if (msg.length==0) {
+      return;
+    }
+
+    this.postChat(msg);
+  }
+
+  toggleEmoji() {
+    $(".econtainer").toggle();
+  }
+
+  appendChat(msg) {
+    document.getElementById('usermsg').value=document.getElementById('usermsg').value+msg;
+    document.getElementById('usermsg').focus();
+  }
+
+  postChat(msg) {    
+    var msg2 = this.RTMCHAT+this.chatName+this.RTMCHATSEPERATOR+msg;
+
+    this.rtmChannel.sendMessage({ text: msg2 }).then(() => {
+      document.getElementById('usermsg').value="";
+      this.receiveChat(msg,"me");
+    }).catch(error => {
+      console.error('AgoraRTM send failure for chat');
+    });
+    $(".econtainer").hide();
+  }
+  
   // Publishing Local Streams
   async joinChannels() {
     if (this.channel) {
@@ -1586,6 +1666,53 @@ class AgoraMultiChanelApp {
     }
   }
 
+  UIInit() {
+
+    if (!this.uiInit || this.landscape!=this.uiinitlandscape) {
+      this.uiInit=true;
+      this.uiinitlandscape=this.landscape;
+
+      this.logoPath = getParameterByName("logoPath") ||  "";
+      this.enableChat = getParameterByName("enableChat") || "false";
+
+      // logo
+      if (this.logoPath.length>0) {        
+        document.getElementById("logoimg").src=this.logoPath; 
+        document.getElementById("logo").classList.remove("hidden");     
+        this.logoHeight=30;             
+      }
+
+      // chat 
+      if (this.enableChat === "true" && this.landscape) {        
+        document.getElementById("chat").classList.remove("hidden");  
+        this.grid_over="grid_over_chat";
+
+        let stats=0;
+        if (!document.getElementById("stats_container").classList.contains("hidden")){
+          stats=48;
+        }
+
+        if (this.logoPath.length>0) {
+          document.getElementById("chat").style.top = (106 + stats) + 'px';
+        } else {
+          document.getElementById("chat").style.top = (76 + stats) + 'px';
+        }
+
+        this.chatWidth=200;             
+        
+      } else {
+        document.getElementById("chat").classList.add("hidden");  
+        this.grid_over="grid_over";
+        this.chatWidth=0;   
+      }
+
+      
+
+    }
+
+  }
+
+
   setMobileOneTime() {
     if (!this.mobileUIUpdated && isMobile()) {
       this.mobileUIUpdated = true;
@@ -1612,6 +1739,7 @@ class AgoraMultiChanelApp {
 
   updateUILayout() {
 
+
     this.setMobileOneTime();
     this.removeAgoraInnerVideoStyling();
 
@@ -1623,7 +1751,14 @@ class AgoraMultiChanelApp {
       this.landscape = true;
     }
 
+    this.UIInit();
+
+    if (this.landscape) {
+      width = window.innerWidth-this.chatWidth;
+    }
     // shownPersonToPerson is 2 person face time style call
+
+    document.getElementById("focus-parent").style.width=width + 'px';
 
     var connected_users = this.usersConnected.length;
     if (connected_users == 1 && this.gridLayout && !this.shareContentOnDisplay) {
@@ -1634,14 +1769,11 @@ class AgoraMultiChanelApp {
       this.toggleLayout();
     }
 
-
     var cell_width = this.CellWidthBase; // 160 and smallest possible size 
     var cell_height = this.CellHeightBase;
     var cell_margin = 4;
     var grid_padding = 6;
     var toolbar_height = document.getElementById("toolbar").offsetHeight;
-    //alert(toolbar_height);
-    //console.log(toolbar_height);
     var toolbar_height_and_focus_height = toolbar_height;
 
     var cells = document.getElementsByClassName('remote_video'); // in grid (excludes focussed follow speaker)
@@ -1721,6 +1853,7 @@ class AgoraMultiChanelApp {
         cols = 1;
       }
       else if (this.landscape) {
+        // height is challenged
         var focus_height = height - toolbar_height - cell_height * 2 - cell_margin * 3 - grid_padding * 3;
         if (focus_height < 180)
           focus_height = 180;
@@ -1739,7 +1872,8 @@ class AgoraMultiChanelApp {
 
     document.getElementById("agoravideoplayer").style.height = document.getElementById("focus-video").style.height;
     document.getElementById("agoravideoplayer").style.width = document.getElementById("focus-video").style.width;
-
+    
+    
     // mobile grid gaps
     if (isMobile()) {
       var mel = document.getElementById("main_body");
@@ -1766,10 +1900,10 @@ class AgoraMultiChanelApp {
     var grid_available_width = width - (grid_padding * cols);
 
     if (connected_users == 1 && !this.gridLayout && !this.shareContentOnDisplay) { // 1 other person to display larger
-      document.getElementById("grid").classList.add("grid_over");
+      document.getElementById("grid").classList.add(this.grid_over);
       grid_available_height = 90;
     } else {
-      document.getElementById("grid").classList.remove("grid_over");
+      document.getElementById("grid").classList.remove(this.grid_over);
     }
     // are we limited by width or height 
     if (rows * grid_available_width / this.AspectRatio > cols * grid_available_height) {
@@ -1806,6 +1940,18 @@ class AgoraMultiChanelApp {
 
     document.getElementById("grid").style.width = grid_width + 'px';
     document.getElementById("grid").style.height = grid_height + 'px';
+
+
+    let stats=0;
+    if (!document.getElementById("stats_container").classList.contains("hidden")){
+      stats=10;
+    }
+    var chat_height= height - toolbar_height - stats- this.logoHeight  - (grid_padding * 4);
+    document.getElementById("chat").style.height = chat_height + 'px';
+
+    document.getElementById("chatbox").style.height = (chat_height-40) + 'px';
+    
+    
 
     var grid_actual_width = document.getElementById("grid").offsetWidth;
     var grid_actual_height = document.getElementById("grid").offsetHeight;
@@ -2103,6 +2249,7 @@ function toggleStats() {
     document.getElementById("stats_container").classList.add("hidden")
     document.getElementById("toolbar").classList.remove("headerOpen");
   }
+  agoraApp.uiInit=false;
 }
 
 function toggleCam() {
@@ -2178,6 +2325,17 @@ function getParameterByNameAsInt(name, url = window.location.href) {
   var val = getParameterByName(name, url);
   if (val) return parseInt(val, 10);
   return val;
+}
+
+function formatAMPM(date) {
+  var hours = date.getHours();
+  var minutes = date.getMinutes();
+  var ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+  minutes = minutes < 10 ? '0'+minutes : minutes;
+  var strTime = hours + ':' + minutes + ' ' + ampm;
+  return strTime;
 }
 
 function resizeGrid() {

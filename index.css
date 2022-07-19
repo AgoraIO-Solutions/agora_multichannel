@@ -1,74 +1,71 @@
-
-
-  body{
-  background-color: #222 !important;
-  overflow: hidden;
+  body {
+    background-color: #222 !important;
+    overflow: hidden;
   }
 
-  .focussed-video{
-  ffbackground-color: #111;
-  margin: auto;
+  .focussed-video {
+    ffbackground-color: #111;
+    margin: auto;
   }
+
   .agora_video_player {
-  -moz-border-radius: 6px;
-  -webkit-border-radius: 6px;
-  border-radius: 6px;
-  overflow: hidden;
-  object-fit: contain !important;
+    -moz-border-radius: 6px;
+    -webkit-border-radius: 6px;
+    border-radius: 6px;
+    overflow: hidden;
+    object-fit: contain !important;
   }
 
   .agora_select {
-  margin: 10px;
-  display: block;
-  width: 240px;
-  background-color: #111;
-  color: #ddd;
+    margin: 10px;
+    display: block;
+    width: 240px;
+    background-color: #111;
+    color: #ddd;
   }
 
-  .cpu_stats{
+  .cpu_stats {
     color: #81bfe4 !important;
   }
 
-  .cpu_statso{
+  .cpu_statso {
     width: 250px !important;
     font-size: 18px;
     display: inline-block;
     color: #bfbfbf;
   }
 
-  .cpu_stats_mobile{
+  .cpu_stats_mobile {
     color: #81bfe4 !important;
   }
 
-  .cpu_stats_mobile_o{
+  .cpu_stats_mobile_o {
     width: 120px !important;
     font-size: 14px;
     display: inline-block;
     color: #bfbfbf;
   }
 
-  .fixed_stat{
+  .fixed_stat {
     display: inline-block;
     width: 70px;
     text-align: left;
   }
 
-  .fixed_stat_short{
+  .fixed_stat_short {
     display: inline-block;
     text-align: left;
     width: 16px;
   }
 
-  .stats_display_inner{
+  .stats_display_inner {
     background-color: rgb(77, 57, 4);
     padding: 2px;
     opacity: 0.9;
   }
 
-
-
   .stats_display {
-    color:#ffbf00;
+    color: #ffbf00;
     margin-left: 2px;
     margin-top: 2px;
     position: absolute;
@@ -76,8 +73,8 @@
     font-size: 12px;
   }
 
-  .stats_display_inner_low{
-    color:#ffbf00 !important;
+  .stats_display_inner_low {
+    color: #ffbf00 !important;
   }
 
   .stats_display_small_font {
@@ -88,10 +85,8 @@
     font-size: 16px !important;
   }
 
-
-
   .stats_display_local {
-    color:#ae47de;
+    color: #ae47de;
     margin-left: 8px;
     margin-top: 8px;
     position: absolute;
@@ -100,52 +95,182 @@
   }
 
   .mic_talking {
-  background-color: lime-green;
+    background-color: lime-green;
   }
 
   .local_video {
-  ibackground-color: #222;
-  margin: 2px;
-  margin-left: 3px;
-  margin-right: 0px;
-  padding: 2px;
-  width: 120px;
-  height: 90px;
-  display: inline-block;
+    margin: 2px;
+    margin-left: 3px;
+    margin-right: 0px;
+    padding: 2px;
+    width: 120px;
+    height: 90px;
+    display: inline-block;
   }
 
   .hidden {
-  display: none !important;
+    display: none !important;
   }
 
-
-  .remove_agora_video_style{
+  .remove_agora_video_style {
     background-color: transparent !important;
   }
 
   .focussed-video-inner {
-  ffbackground-color: #111;
-  width:100% !important;
-  height:100% !important;
-  background-image: url("./img/novideo.png") ;
-  background-repeat: no-repeat;
-  background-size: auto 50%;
-  background-position: center 50%;
+    width: 100% !important;
+    height: 100% !important;
+    background-image: url("./img/novideo.png");
+    background-repeat: no-repeat;
+    background-size: auto 30%;
+    background-position: center 50%;
   }
 
   .remote_video {
-  ffbackground-color: #111;
-  background-image: url("./img/novideo.png") ;
-  background-repeat: no-repeat;
-  background-size: auto 50%;
-  background-position: center 50%;
-  margin: 2px;
-  padding: 2px;
-  width: 120px;
-  height: 90px;
-  display: inline-block;
+    background-image: url("./img/novideo.png");
+    background-repeat: no-repeat;
+    background-size: auto 50%;
+    background-position: center 50%;
+    margin: 2px;
+    padding: 2px;
+    width: 120px;
+    height: 90px;
+    display: inline-block;
   }
 
+  .logo {
+    width: 100%;
+    height: 30px;
+    background-color: white;
+    display: flex;
+    justify-content: center;
+  }
+
+  .logoimg {
+    height: 28px;
+    margin-top: 1px;
+  }
+
+  .chat {
+    position: absolute;
+    right: 10px;
+    background-color: #efefef;
+    width: 190px;
+    border-radius: 6px !important;
+  }
+
+  .chat_send{
+    display: inline-block;
+  }
+
+  .econtainer { 
+    position: absolute;
+    z-index: 10000;
+    display: none;
+    left: 0; 
+    right: 0; 
+    margin-left: auto; 
+    margin-right: auto; 
+    width: 600px; /* Need a specific value to work */
+    margin-top: 70px;
+    }
+  .chatcellleft{
+    border-radius: 6px;
+    box-shadow: rgb(178 178 178) 0px 0px 2px;
+    display: block;
+    padding: 4px 8px;
+    position: relative;
+    vertical-align: top;
+    color: white;
+    overflow-wrap: break-word;
+    max-width: 180px;
+    background-color: #e447cb;
+    border: none;
+    margin-left: 4px;
+    margin-right: 30px;
+    margin-top: 0px;
+    font-size: 12px;
+  }
+
+  .chatcellleftdate{
+    display: block;
+    position: relative;
+    vertical-align: top;
+    color: black;
+    margin-left: 7px;
+    margin-right: 34px;
+    margin-top: 10px;
+    font-size: 9px;
+  }
+
+  .chatcellrightdate{
+    display: block;
+    position: relative;
+    vertical-align: top;
+    color: black;
+    margin-left: 134px;
+    margin-right: 8px;
+    margin-top: 10px;
+    font-size: 9px;
+  }
+
+  .chatcellright {
+    border-radius: 6px;
+    box-shadow: rgb(178 178 178) 0px 0px 2px;
+    display: block;
+    padding: 4px 8px;
+    position: relative;
+    vertical-align: top;
+    color: black;
+    overflow-wrap: break-word;
+    max-width: 180px;    
+    background-color: #ddd;
+    border: none;
+    margin-left: 30px;
+    margin-right: 4px;
+    margin-top: 0px;
+    font-size: 12px;
+  }
+
+  #chatbox {
+    text-align: left;
+    margin: 0 auto;
+    margin-bottom: 5px;
+    padding: 4px;
+    padding-top: 0px;
+    background: #fafafa;
+    width: 190px;
+    border: 1px solid #efefef;
+    overflow: auto;    
+    border-radius: 6px !important;
+    border-bottom: 1px solid #efefef;
+  }
+
+  #usermsg {
+    width: 130px;
+    margin-left: 6px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    padding-left: 4px;
+    font-size: 12px;
+  }
+
+  #usermsg:focus {
+    outline: none !important;
+    border: 1px solid #eee;
+  }
+
+  #submitmsg {
+    width: 15px;
+    margin-left: 4px;
+    cursor: pointer;
+  }
+
+  #emoticon {
+    width: 15px;
+    margin-left: 4px;
+    cursor: pointer;
+  }
+  
 
   .remote_video_mobile {
     margin: 1px;
@@ -153,299 +278,307 @@
   }
 
   .remote_video_active {
-  border-style: solid;
-  padding: 0px;
-  border-color: #FD5F00;
-  border-width: 2px;
-  -moz-border-radius: 5px;
-  -webkit-border-radius:5px;
-  border-radius: 5px;
+    border-style: solid;
+    padding: 0px;
+    border-color: #FD5F00;
+    border-width: 2px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
   }
 
   .agora_stats {
-  width: 100% !important;
-  height: 48px;
-  pheight: 32px;
-  font-size: 14px;
-  padding: 2px;
-  margin-top: 8px !important;
-  margin: 2px;
-  bbackground-color: #5b5b5b;
-  background-color: #b8b8b8;
-  color: black;
-  display: inline-block;
-  text-align: center;
-  cursor: pointer;
-  vertical-align: middle;
+    width: 100% !important;
+    height: 48px;
+    pheight: 32px;
+    font-size: 14px;
+    padding: 2px;
+    margin-top: 8px !important;
+    margin: 2px;
+    bbackground-color: #5b5b5b;
+    background-color: #b8b8b8;
+    color: black;
+    display: inline-block;
+    text-align: center;
+    cursor: pointer;
+    vertical-align: middle;
   }
 
   .media_controls {
-  font-family: Arial, Helvetica, sans-serif;
-  width: 160px;
-  color: black;
-  display: inline-block;
+    font-family: Arial, Helvetica, sans-serif;
+    width: 160px;
+    color: black;
+    display: inline-block;
   }
 
   .settings_controls {
-  font-family: Arial, Helvetica, sans-serif;
-  float: right;
-  color: black;
-  display: inline-block;
+    font-family: Arial, Helvetica, sans-serif;
+    float: right;
+    color: black;
+    display: inline-block;
   }
 
   .main {
-  background: #222;
+    background: #222;
   }
 
   #toolbar {
-  white-space: nowrap;
+    white-space: nowrap;
   }
 
   #control_container {
-  idisplay: inline-block;
-  top: -46px;
-  position: relative;
-  left: 6px;
-  top: -9px;
-  left: 0px;
+    idisplay: inline-block;
+    top: -46px;
+    position: relative;
+    left: 6px;
+    top: -9px;
+    left: 0px;
   }
 
   #stats_container {
-  width: 100%;
-  float: left;
-  margin-right: 3px;
-  display: inline-block;
+    width: 100%;
+    float: left;
+    margin-right: 3px;
+    display: inline-block;
   }
 
 
   #player_container {
-  width: 100%;
-  float: left;
-  margin-right: 3px;
-  margin-top: 12px;
-  padding: 6px;
-  padding-top: 11px;
-  display: inline-block;
-  background-color: #81bfe4 !important;
+    width: 100%;
+    float: left;
+    margin-right: 3px;
+    margin-top: 12px;
+    padding: 6px;
+    padding-top: 11px;
+    display: inline-block;
+    background-color: #81bfe4 !important;
   }
 
   #mic_mute {
-  background-image: url('img/microphone_1-512.webp');
+    background-image: url('img/microphone_1-512.webp');
   }
 
   .default_icon_mobile {
-  width: 60px !important;
-  height: 60px !important;
-  margin-left: 10px !important;
-  margin-right: 10px !important;
+    width: 60px !important;
+    height: 60px !important;
+    margin-left: 10px !important;
+    margin-right: 10px !important;
   }
 
   .button_horizontally_flip {
-  transform: scaleX(-1);
+    transform: scaleX(-1);
   }
 
   .fullscreen {
-  width: 1280px !important;
-  height: 720px !important;
+    width: 1280px !important;
+    height: 720px !important;
   }
 
   .cam_off_reduced_mobile {
-  width: 52px !important;
-  height: 44px !important;
-  margin-left: 10px !important;
-  margin-right: 10px !important;
-  padding: 12px !important;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
+    width: 52px !important;
+    height: 44px !important;
+    margin-left: 10px !important;
+    margin-right: 10px !important;
+    padding: 12px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
   }
 
   .cam_off_reduced {
-  width: 30px !important;
-  height: 26px !important;
-  padding: 6px !important;
-  padding-left: 4px !important;
-  padding-right: 4px !important;
+    width: 30px !important;
+    height: 26px !important;
+    padding: 6px !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
   }
 
   .default_icon_left_mobile {
-  margin-left: 14px !important;
+    margin-left: 14px !important;
   }
 
   .default_icon_right_mobile {
-  margin-right: 14px !important;
+    margin-right: 14px !important;
 
   }
 
   .default_icon_left {
-  margin-left: 10px;
+    margin-left: 10px;
   }
 
   .default_icon_right {
-  margin-right: 10px;
+    margin-right: 10px;
   }
 
   .default_icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 16%;
-  padding: 2px;
-  imargin: 6px;
+    width: 34px;
+    height: 34px;
+    border-radius: 16%;
+    padding: 2px;
+    imargin: 6px;
 
-  background-color: #cd5656;
-  color: white;
-  display: inline-block;
-  text-align: center;
-  cursor: pointer;
-  vertical-align: middle;
-  box-sizing: content-box;
+    background-color: #cd5656;
+    color: white;
+    display: inline-block;
+    text-align: center;
+    cursor: pointer;
+    vertical-align: middle;
+    box-sizing: content-box;
   }
 
 
-  .play_icon{
-  background-color: #81bfe4 !important;
-  }    
-
-
-  ._icon{
+  .play_icon {
     background-color: #81bfe4 !important;
-    }    
+  }
 
 
-  .stop_icon{
-  width: 28px  !important;
-  height: 28px !important;
-  margin-top: -3px !important;
-  margin-left: 12px;
-  opacity: 80% !important;
-  }    
+  ._icon {
+    background-color: #81bfe4 !important;
+  }
 
-  .cue_icon{
-    width: 32px  !important;
+
+  .stop_icon {
+    width: 28px !important;
+    height: 28px !important;
+    margin-top: -3px !important;
+    margin-left: 12px;
+    opacity: 80% !important;
+  }
+
+  .cue_icon {
+    width: 32px !important;
     height: 32px !important;
     margin-top: -3px !important;
-    }    
-  
+  }
+
 
 
   .media_buttons_enabled {
-  background-color: #47aa79 !important;
+    background-color: #47aa79 !important;
   }
 
   .settings_icon {
-  background-color: rgb(144, 146, 145) !important;
+    background-color: rgb(144, 146, 145) !important;
   }
 
   #pre-local-player {
-  width: 320px;
-  height: 180px;
+    width: 320px;
+    height: 180px;
   }
 
   #grid {
-  margin-left: 4px;
-  overflow: hidden;
+    margin-left: 4px;
+    overflow: hidden;
   }
 
 
   .lds-ring {
-  top: 50%;
-  left: 50%;
-  margin-left: -80px;
-  margin-top: -80px;
-  display: block;
-  position: absolute;
-  width: 80px;
-  height: 80px;
+    top: 50%;
+    left: 50%;
+    margin-left: -80px;
+    margin-top: -80px;
+    display: block;
+    position: absolute;
+    width: 80px;
+    height: 80px;
 
   }
 
   .mic_push {
-  background:  rgb(91, 184, 137) !important;
+    background: rgb(91, 184, 137) !important;
   }
+
   .lds-ring div {
-  z-index: 100;
-  left: 50%;
-  top: 50%;
-  box-sizing: border-box;
-  display: block;
-  position: absolute;
-  width: 64px;
-  height: 64px;
-  margin: 4px;
-  border: 4px solid rgb(91, 184, 137);
-  border-radius: 50%;
-  animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
-  border-color:rgb(91, 184, 137) transparent transparent transparent;
+    z-index: 100;
+    left: 50%;
+    top: 50%;
+    box-sizing: border-box;
+    display: block;
+    position: absolute;
+    width: 64px;
+    height: 64px;
+    margin: 4px;
+    border: 4px solid rgb(91, 184, 137);
+    border-radius: 50%;
+    animation: lds-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    border-color: rgb(91, 184, 137) transparent transparent transparent;
   }
 
   .lds-ring div:nth-child(1) {
-  animation-delay: -0.45s;
+    animation-delay: -0.45s;
   }
 
   .lds-ring div:nth-child(2) {
-  animation-delay: -0.3s;
+    animation-delay: -0.3s;
   }
 
   .lds-ring div:nth-child(3) {
-  animation-delay: -0.15s;
+    animation-delay: -0.15s;
   }
 
   @keyframes lds-ring {
-  0% {
-    transform: rotate(0deg);
+    0% {
+      transform: rotate(0deg);
+    }
+
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
-  100% {
-    transform: rotate(360deg);
-  }
-  }
-  .modal-content{
+  .modal-content {
     background-color: #fafafa;
   }
 
-  .grid_over{
-    position:absolute;
+  .grid_over {
+    position: absolute;
     bottom: 10px;
     right: 10px;
   }
 
-  .mp4label{
+  .grid_over_chat {
+    position: absolute;
+    bottom: 10px;
+    right: 210px;
+  }
+
+  .mp4label {
     margin-left: 5px;
     margin-right: 5px !important;
     font-size: 16px;
     font-weight: 700;
   }
 
-  .watch_input{
+  .watch_input {
     width: 350px;
   }
 
-  .watch_input_mobile{
+  .watch_input_mobile {
     width: 70px;
   }
 
-  #watchiddd{
-  width: 18px;
-  height: 28px;
+  #watchiddd {
+    width: 18px;
+    height: 28px;
   }
-  
-  #agoravideoplayer{
+
+  #agoravideoplayer {
     width: 100%;
     border-radius: 10px;
   }
 
 
-  .status_good{
+  .status_good {
     color: #368b61;
   }
 
-  .status_fair{
+  .status_fair {
     color: #6d7410;
   }
 
-  .status_poor{
+  .status_poor {
     color: #865102;
   }
 
-  .status_critical{
+  .status_critical {
     color: #5f0202;
   }

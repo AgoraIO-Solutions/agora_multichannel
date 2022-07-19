@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-  <meta charset="utf 8">
+<head>  
+  <meta charset="UTF-8">
+  
+  <link href="https://www.jqueryscript.net/css/jquerysctipttop.css" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="./assets/emojis.css">
   <title>Agora SA Demo</title>
   <link rel="stylesheet" href="./assets/bootstrap.min.css">
-  <!--script src="./sdk/AgoraRTC_N-4.7.1.js"></script-->
   <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
   <script src="./sdk/agora-rtm-sdk-1.4.3.js"></script>
   <script src="./sdk/AgoraRTCUtil.js?gg=cachb65"></script>
@@ -17,6 +19,14 @@
 </head>
 
 <body>
+
+  <div class="econtainer">
+    <div id="emojis"> </div>
+  </div>
+  <div id="logo" class="logo hidden" >    
+    <img src='' id="logoimg"
+    class="logoimg" />
+  </div>
   <div id="main_body" class="main_body">
     <div id="toolbar" class="header">
 
@@ -109,7 +119,6 @@
           <select id="watchiddd" onchange="document.getElementById('watchid').value=(this.value); ">
               <option></option>        
               <option value='https://sa-utils.agora.io/media/30720607-hd.mp4'>Shark Clip</option>
-              <option value='https://sa-utils.agora.io/media/cod.mov'>COD</option>
               <option value='https://sa-utils.agora.io/media/monuments-movie-trailer-1_h720p.mov'>Moments - Trailer</option>
               <option value='https://sa-utils.agora.io/media/rons-gone-wrong-trailer-1_h720p.mov'>Rons Gone Wrong - Trailer</option>
               <option value='https://sa-utils.agora.io/media/a-quiet-place-part-ii-final-trailer_h720p.mov'>A Quiet Place - Trailer </option>
@@ -128,25 +137,48 @@
         </div>
       </div>
     </div>
+  
+    <div id="focus-parent">
+      <div id="focus-video" class="focussed-video hidden">
+        <div id="ytplayer" class="hidden"></div>
+        <div id="agoraplayer" class="hidden">
+          <video id="agoravideoplayer" crossorigin="anonymous" controls="false" preload='auto' playsinline>
 
-    <div id="focus-video" class="focussed-video hidden">
-      <div id="ytplayer" class="hidden"></div>
-
-      <div id="agoraplayer" class="hidden">
-        <video id="agoravideoplayer" crossorigin="anonymous" controls="false" preload='auto' playsinline>
-
-        </video>
+          </video>
+        </div>
       </div>
-    </div>
 
+
+    <div id="chat" class="chat hidden" >
+      <div id="chatbox">                    
+      </div>
+ 
+      <input name="usermsg" type="text" id="usermsg" disabled placeholder="Enter chat here" onkeydown="agoraApp.chatKey(event,this.value)" />
+      <img src='img/send.png' title="Send Chat" onclick="agoraApp.sendChat();" id="submitmsg" class="chat_send" />
+      <img src='img/happy.png' title="Emoticons"  onclick="agoraApp.toggleEmoji();" id="emoticon" class="chat_send" />
+
+    </div>
 
     <div id="grid" class="grid_wrapper">
       <div id="local-player" class="local_video hidden"><div id="stats_local" class="stats_display_local"></div></div>
     </div>
-
   </div>
+  </div>
+
+
 </body>
 
-<script src="./assets/jquery-3.4.1.min.js"></script>
+<script src="./assets/jquery-3.5.1.js"></script>
+<script src="./assets/twemoji.min.js" crossorigin="anonymous"></script>
+<script src="./assets/DisMojiPicker.js"></script>
+
+<script>
+    $("#emojis").disMojiPicker()
+    $("#emojis").picker(emoji => agoraApp.appendChat(emoji));
+    twemoji.parse(document.body);
+</script>
+
+
+<!--script src="./assets/jquery-3.4.1.min.js"></script-->
 <script src="./assets/bootstrap.bundle.min.js"></script>
-<script src="./app.js?caciihb65"></script>
+<script src="./app.js?cachb65"></script>

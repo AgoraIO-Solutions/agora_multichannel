@@ -81,7 +81,7 @@ var AgoraRTCUtils = (function () {
     { id: "360p_low", width: 640, height: 360, frameRate: 24, bitrateMin: 120, moveDownThreshold: 120, moveUpThreshold: 600, bitrateMax: 1000, maxRemoteUsers: 4 },
     { id: "360p_11", width: 640, height: 360, frameRate: 24, bitrateMin: 400, moveDownThreshold: 250, moveUpThreshold: 650, bitrateMax: 1000, maxRemoteUsers: 4 },
     { id: "720p", width: 1280, height: 720, frameRate: 24, bitrateMin: 600, moveDownThreshold: 650, moveUpThreshold: 1200, bitrateMax: 1800, maxRemoteUsers: 1 },
-    { id: "1080p", width: 1920, height: 1080, frameRate: 24, bitrateMin: 1200, bitrateMinDesired: 2000, bitrateMax: 3600 },
+    //  { id: "1080p", width: 1920, height: 1080, frameRate: 24, bitrateMin: 600, bitrateMinDesired: 1200, bitrateMax: 3600 },
   ];
 
   // private methods
@@ -791,19 +791,15 @@ strategy
 
 
   return { // public interfaces
-    startAutoAdjustResolution: function (client, initialProfile, switchForFPSAndBR, forceProfile) {
+    startAutoAdjustResolution: function (client, initialProfile, switchForFPSAndBR) {
       _publishClient = client;
       _switchForFPSAndBR = switchForFPSAndBR;
       _currentProfile = getProfileIndex(initialProfile);
-      if (_currentProfile < 0) {
+      if (_currentProfile < 0)
         throw 'Auto Adjust Profile Not Found';
-      }
-
-      if (!forceProfile) {
-	      _autoAdjustInterval = setInterval(() => {
-	        autoAdjustResolution();
-	      }, AdjustFrequency);
-      }
+      _autoAdjustInterval = setInterval(() => {
+        autoAdjustResolution();
+      }, AdjustFrequency);
     },
     stopAutoAdjustResolution: function () {
       clearInterval(_autoAdjustInterval);
