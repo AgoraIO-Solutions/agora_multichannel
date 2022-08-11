@@ -110,8 +110,12 @@ class AgoraWatchParty {
         };
 
         this.player.onplay = function (evt) {
+	    if (AgoraRTCUtils.isIOS()) {
+		    agoraApp.fixiOSPlayerAudio();
+	    }
             console.log("onplay " + that.player.currentTime + " " + evt);
             that.broadcastState();
+
         };
 
         this.player.onpause = function (evt) {
@@ -256,6 +260,9 @@ class AgoraWatchParty {
                 this.player.currentTime = playerTime;
                 AgoraRTC.processExternalMediaAEC(this.player);
                 this.player.play();
+	        if (AgoraRTCUtils.isIOS()) {
+                    agoraApp.fixiOSPlayerAudio();
+                }
             } else {
                 this.player.pause();
             }

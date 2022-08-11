@@ -1604,6 +1604,21 @@ class AgoraMultiChanelApp {
     console.log("### PUBLISHED AUDIO TO " + publishToIndex + "! ###");
   }
 
+
+ async fixiOSPlayerAudio() {
+   //alert("fixiOSPlayerAudio 2");
+    // avoid iOS low volume issue by recreating  mic track
+    //await this.leaveChannels();
+    //await this.joinChannels();
+    var enabled=this.localTracks.audioTrack._enabled;
+    this.localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+    await this.clients[this.myPublishClient].setClientRole("host");
+    await this.clients[this.myPublishClient].publish(this.localTracks.audioTrack);
+   if (!enabled) {
+	  this.localTracks.audioTrack.setEnabled(false);
+   }
+ }
+
   // Returns the index of the first client object with an open channel.
   async getFirstOpenChannel() {
 
