@@ -286,7 +286,8 @@ var AgoraRTCUtils = (function () {
   var _voiceActivityDetectionInterval;
 
   function getInputLevel(track) {
-    var analyser = track._source.analyserNode;
+    var analyser = track._source.volumeLevelAnalyser.analyserNode;
+    //var analyser = track._source.analyserNode;
     const bufferLength = analyser.frequencyBinCount;
     var data = new Uint8Array(bufferLength);
     analyser.getByteFrequencyData(data);
