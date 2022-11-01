@@ -16,6 +16,6 @@ Depenending on your network, it can take a reasonabling long amount of time to r
 
 Usage:
 
-clone this repo into a folder being served by a webserver e.g. nginx Access the demo using an Agora appid which doesn't have tokens enabled e.g. https://sokool.io/agora_multichannel/?appid=20FFFFFFFFFb7c0cf5aPPPPPPPP537
+clone this repo into a folder being served by a webserver e.g. nginx Access the demo using an Agora appid which doesn't have tokens enabled e.g. https://sa-utils.agora.io/demo/?appid=AAA
 
 If you wanted to use tokens you would need to pass a token into the page for each of the channels the user is joining.
