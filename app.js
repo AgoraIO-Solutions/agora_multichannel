@@ -1690,12 +1690,12 @@ class AgoraMultiChanelApp {
       this.logoPath = getParameterByName("logoPath") ||  "";
       this.enableChat = getParameterByName("enableChat") || "false";
 
-      this.hideToolbar = getParameterByName("hideToolbar") || "false";
+      this.hideToolbar = (getParameterByName("hideToolbar") || "false")==='true';
+      
       if (this.hideToolbar){
         hideToolbar();
       }
       
-
       // logo
       if (this.logoPath.length>0) {        
         document.getElementById("logoimg").src=this.logoPath; 
@@ -1792,8 +1792,13 @@ class AgoraMultiChanelApp {
 
     var cell_width = this.CellWidthBase; // 160 and smallest possible size 
     var cell_height = this.CellHeightBase;
-    var cell_margin = 2;
-    var grid_padding = 2;
+    var cell_margin = 4;
+    var grid_padding = 6;
+    
+    if (this.hideToolbar){
+       cell_margin = 2;
+       grid_padding = 2;
+    }
     var toolbar_height = document.getElementById("toolbar").offsetHeight;
     var toolbar_height_and_focus_height = toolbar_height;
 
