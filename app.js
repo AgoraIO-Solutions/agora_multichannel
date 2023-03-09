@@ -1690,6 +1690,12 @@ class AgoraMultiChanelApp {
       this.logoPath = getParameterByName("logoPath") ||  "";
       this.enableChat = getParameterByName("enableChat") || "false";
 
+      this.hideToolbar = getParameterByName("hideToolbar") || "false";
+      if (this.hideToolbar){
+        hideToolbar();
+      }
+      
+
       // logo
       if (this.logoPath.length>0) {        
         document.getElementById("logoimg").src=this.logoPath; 
@@ -1786,8 +1792,8 @@ class AgoraMultiChanelApp {
 
     var cell_width = this.CellWidthBase; // 160 and smallest possible size 
     var cell_height = this.CellHeightBase;
-    var cell_margin = 4;
-    var grid_padding = 6;
+    var cell_margin = 2;
+    var grid_padding = 2;
     var toolbar_height = document.getElementById("toolbar").offsetHeight;
     var toolbar_height_and_focus_height = toolbar_height;
 
@@ -1971,7 +1977,13 @@ class AgoraMultiChanelApp {
     var grid_actual_width = document.getElementById("grid").offsetWidth;
     var grid_actual_height = document.getElementById("grid").offsetHeight;
 
-    document.getElementById("grid").style.marginTop = '8px';
+    if (this.hideToolbar){
+      document.getElementById("grid").style.marginTop = '2px';
+    }    
+    else {
+      document.getElementById("grid").style.marginTop = '8px';
+    }
+
     var ml = ((width - grid_actual_width) / 2);// - (   + 1) ;
     if (ml < 0) {
       ml = 0;
@@ -2249,6 +2261,12 @@ function publishScreenShareToChannel() {
   agoraApp.publishScreenShareToChannel();
 }
 
+
+function hideToolbar() {
+    document.getElementById("stats_container").classList.add("hidden")
+    document.getElementById("toolbar").classList.add("hidden");
+  }
+
 function hideStats() {
   if (!document.getElementById("stats_container").classList.contains("hidden")) {
     document.getElementById("stats_container").classList.add("hidden")
@@ -2497,7 +2515,19 @@ async function connect() {
   await agoraApp.init();
   // allow time to find users in each channel
   // this is a hack and a production multi channel 
-  setTimeout(async function () { await agoraApp.startCamMic() }, 4000);
+  var publicMedia = getParameterByName("publishMedia") || "true";
+
+  if (publicMedia === "true") {
+    setTimeout(async function () { await agoraApp.startCamMic() }, 2000);
+  } else {
+        if (!agoraApp.RTCUtilsInitialised) {    
+          // we will use the last channel name and UID to join RTM for send/receive VAD messages
+          agoraApp.rtmChannelName = agoraApp.baseChannelName;
+          agoraApp.rtmUid = agoraApp.myUid[0].toString();
+          agoraApp.initRTM();
+    }
+  }
+  
 }
 
 window.addEventListener('resize', resizeGrid);
@@ -2507,6 +2537,7 @@ var showDeviceSelection = getParameterByName("showDeviceSelection") || "true";
 if (showDeviceSelection === "true") {
   showMediaDeviceTest();
 } else {
+  
   connect();
 }
 
